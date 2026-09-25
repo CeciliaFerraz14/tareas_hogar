@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover: la web ocupa también la zona del notch; SafeAreaView
+         deja el hueco leyendo env(safe-area-inset-*). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+
+    <!-- PWA: el "DNI" de la app (nombre, iconos, colores, pantalla completa). -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- iOS: Safari no lee los iconos del manifest; usa estas etiquetas. -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="HOMI" />
+    <!-- "default": texto oscuro en la barra de estado, que se lee sobre el fondo claro. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+        /* Mismo melocotón que la animación de inicio: sin destello blanco al abrir. */
+        background-color: #fcefe6;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        /* Sin rebote ni "tirar para recargar" del navegador: la app tiene el suyo. */
+        overscroll-behavior: none;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      Necesitas activar JavaScript para usar HOMI.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+
+    <!-- Service worker (generado con Workbox en `npm run build:web`): guarda la app
+         en caché para que abra sin conexión. Con `expo start --web` no existe
+         sw.js, así que en desarrollo no se registra y no hay caché que moleste. -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function (err) {
+            console.warn('No se pudo registrar el service worker', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
