@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { disableWebPush } from '../lib/webPush';
 
 type AuthState = {
   session: Session | null;
@@ -16,6 +17,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isBootstrapping: true,
   setSession: (session) => set({ session, user: session?.user ?? null }),
   signOut: async () => {
+    // Antes de salir (hace falta la sesión): este navegador deja de recibir mis avisos.
+    await disableWebPush().catch(() => undefined);
     await supabase.auth.signOut();
     set({ session: null, user: null });
   },

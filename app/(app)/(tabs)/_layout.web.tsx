@@ -4,6 +4,8 @@ import type { BottomTabBarProps } from 'expo-router/tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckSquare, Home, MessageCircle, Settings, type LucideIcon } from 'lucide-react-native';
 import { useTheme } from '../../../lib/theme';
+import { useTotalUnread } from '../../../store/chatStore';
+import { Text } from '../../../components/ui/Text';
 
 /**
  * Pestañas de la versión web / PWA. En iPhone y Android se usa _layout.tsx (la
@@ -32,6 +34,7 @@ export default function TabsLayoutWeb() {
 function HomiTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const unread = useTotalUnread();
 
   return (
     <View
@@ -49,7 +52,9 @@ function HomiTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       {state.routes.map((route, index) => {
         const focused = state.index === index;
         const Icon = ICONS[route.name] ?? Home;
-        const label = descriptors[route.key].options.title ?? route.name;
+        const title = descriptors[route.key].options.title ?? route.name;
+        const badge = route.name === 'chat' && unread > 0 ? (unread > 99 ? '99+' : String(unread)) : null;
+        const label = badge ? `${title}, ${unread} sin leer` : title;
 
         function onPress() {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -80,6 +85,29 @@ function HomiTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 strokeWidth={focused ? 2.4 : 2}
                 color={focused ? theme.colors.textOnFill : theme.colors.textSecondary}
               />
+              {badge ? (
+                // Globo con los mensajes sin leer.
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 10,
+                    minWidth: 20,
+                    height: 20,
+                    paddingHorizontal: 5,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.colors.primary,
+                    borderWidth: 2,
+                    borderColor: theme.colors.surface,
+                  }}
+                >
+                  <Text variant="caption" style={{ color: '#fff', fontSize: 11, lineHeight: 13, fontFamily: theme.typography.family.bold }}>
+                    {badge}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </Pressable>
         );

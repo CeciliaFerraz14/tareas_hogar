@@ -61,6 +61,21 @@ function iconSvg(houseRatio) {
   </svg>`;
 }
 
+/**
+ * Icono pequeño de la barra de estado de Android ("badge"): Android solo usa la
+ * forma (lo pinta en blanco), así que es el contorno de la casita sin rellenos.
+ */
+function badgeSvg() {
+  const outline = HOUSE.replace(/fill="[^"]*"/g, 'fill="none"').replaceAll(INK, '#FFFFFF');
+  const size = 96;
+  const scale = (size * 0.86) / 120;
+  const x = (size - 120 * scale) / 2;
+  const y = (size - 114 * scale) / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <g transform="translate(${x} ${y}) scale(${scale})" stroke-width="5">${outline.replace(/stroke-width="[^"]*"/g, 'stroke-width="6"')}</g>
+  </svg>`;
+}
+
 function png(svg, width) {
   return new Resvg(svg, { fitTo: { mode: 'width', value: width } }).render().asPng();
 }
@@ -77,6 +92,7 @@ const files = {
   // iOS: 180×180 y sin transparencia (Safari redondea las esquinas él solo).
   'apple-touch-icon.png': png(regular, 180),
   'favicon-48.png': png(regular, 48),
+  'badge-96.png': png(badgeSvg(), 96),
 };
 
 for (const [name, data] of Object.entries(files)) {

@@ -13,6 +13,7 @@ import { AddMenuButton } from '../../../components/ui/AddMenuButton';
 import { HouseIllustration } from '../../../components/brand/HouseIllustration';
 import { HouseCard, type HouseSection } from '../../../components/home/HouseCard';
 import { TodayTasks } from '../../../components/home/TodayTasks';
+import { NotificationsPrompt } from '../../../components/home/NotificationsPrompt';
 import { useHomeSummary } from '../../../hooks/useHomeSummary';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -239,6 +240,8 @@ export default function InicioScreen() {
           ]}
         />
       </View>
+
+      {hasHouses ? <NotificationsPrompt /> : null}
 
       {hasHouses ? (
         <View style={{ gap: theme.spacing.sm }}>

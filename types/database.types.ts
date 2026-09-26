@@ -356,6 +356,41 @@ export type Database = {
           },
         ]
       }
+      notification_prefs: {
+        Row: {
+          chat: boolean
+          expenses: boolean
+          shopping: boolean
+          tasks: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat?: boolean
+          expenses?: boolean
+          shopping?: boolean
+          tasks?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          chat?: boolean
+          expenses?: boolean
+          shopping?: boolean
+          tasks?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_prefs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_tasks: {
         Row: {
           assigned_to: string | null
@@ -432,6 +467,47 @@ export type Database = {
             columns: ["house_id"]
             isOneToOne: false
             referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -713,6 +789,8 @@ export type Database = {
         Returns: string
       }
       create_house: { Args: { p_name: string }; Returns: string }
+      get_push_config: { Args: never; Returns: Json }
+      get_vapid_public_key: { Args: never; Returns: string }
       mark_chat_read: {
         Args: { p_house_id: string; p_up_to: string }
         Returns: undefined
@@ -729,6 +807,15 @@ export type Database = {
       }
       reorder_my_houses: {
         Args: { p_house_ids: string[] }
+        Returns: undefined
+      }
+      save_push_subscription: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_p256dh: string
+          p_user_agent?: string
+        }
         Returns: undefined
       }
       set_house_avatar: {

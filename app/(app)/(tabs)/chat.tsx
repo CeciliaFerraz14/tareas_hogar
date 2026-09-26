@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Alert } from '../../../lib/alert';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { Text } from '../../../components/ui/Text';
 import { Card } from '../../../components/ui/Card';
 import { useAuthStore } from '../../../store/authStore';
 import { useHouseStore } from '../../../store/houseStore';
+import { useChatStore } from '../../../store/chatStore';
 import { supabase } from '../../../lib/supabase';
 import { useTheme } from '../../../lib/theme';
 
@@ -35,6 +36,7 @@ export default function ChatTabScreen() {
   const theme = useTheme();
   const setCurrentHouse = useHouseStore((s) => s.setCurrentHouse);
   const userId = useAuthStore((s) => s.user?.id);
+  const unreadByHouse = useChatStore((s) => s.unreadByHouse);
 
   const [chats, setChats] = useState<HouseChat[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,6 +93,9 @@ export default function ChatTabScreen() {
   // Al volver a la pestaña: orden de hogares y últimos mensajes al día.
   useFocusEffect(useCallback(() => { void loadChats(); }, [loadChats]));
 
+  // Llega un mensaje (cambian los no leídos) → vista previa al día sin salir.
+  useEffect(() => { void loadChats(); }, [unreadByHouse, loadChats]);
+
   async function handleRefresh() {
     setRefreshing(true);
     await loadChats();
@@ -122,8 +127,14 @@ export default function ChatTabScreen() {
           </Text>
         </View>
       ) : (
-        chats.map((chat) => (
-          <Pressable key={chat.id} onPress={() => openChat(chat.id)}>
+        chats.map((chat) => {
+          const unread = unreadByHouse[chat.id] ?? 0;
+          return (
+          <Pressable
+            key={chat.id}
+            onPress={() => openChat(chat.id)}
+            accessibilityLabel={unread > 0 ? `${chat.name}, ${unread} sin leer` : chat.name}
+          >
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{
@@ -144,19 +155,41 @@ export default function ChatTabScreen() {
                     ) : null}
                   </View>
                   <Text
-                    variant="caption"
-                    color="secondary"
+                    variant={unread > 0 ? 'label' : 'caption'}
+                    color={unread > 0 ? 'primary' : 'secondary'}
                     style={{ opacity: chat.lastMessage ? 1 : 0.5 }}
                     numberOfLines={1}
                   >
                     {chat.lastMessage ?? 'Sin mensajes aún'}
                   </Text>
                 </View>
-                <ChevronRight size={18} color={theme.colors.textSecondary} />
+                {unread > 0 ? (
+                  // Mensajes sin leer de este hogar.
+                  <View
+                    style={{
+                      minWidth: 24,
+                      height: 24,
+                      paddingHorizontal: 7,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: theme.colors.primary,
+                      borderWidth: theme.borderWidth,
+                      borderColor: theme.colors.outline,
+                    }}
+                  >
+                    <Text variant="label" style={{ color: '#fff', fontSize: 12, lineHeight: 15 }}>
+                      {unread > 99 ? '99+' : unread}
+                    </Text>
+                  </View>
+                ) : (
+                  <ChevronRight size={18} color={theme.colors.textSecondary} />
+                )}
               </View>
             </Card>
           </Pressable>
-        ))
+          );
+        })
       )}
     </Screen>
   );

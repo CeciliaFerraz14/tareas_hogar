@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTheme } from '../../../lib/theme';
+import { useTotalUnread } from '../../../store/chatStore';
 
 /**
  * Barra de pestañas nativa: en iOS 26 es de Liquid Glass (con la burbuja que se
@@ -10,6 +11,7 @@ import { useTheme } from '../../../lib/theme';
  */
 export default function TabsLayout() {
   const theme = useTheme();
+  const unread = useTotalUnread();
   // Fondo de cada pestaña: el de la app, no el gris claro por defecto de React Navigation.
   const contentStyle = { backgroundColor: theme.colors.background };
 
@@ -37,12 +39,20 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'checkmark.square', selected: 'checkmark.square.fill' }} md="check_box" />
         <NativeTabs.Trigger.Label hidden>Tareas</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="chat" accessibilityLabel="Chat" contentStyle={contentStyle}>
+      <NativeTabs.Trigger
+        name="chat"
+        accessibilityLabel={unread > 0 ? `Chat, ${unread} sin leer` : 'Chat'}
+        contentStyle={contentStyle}
+      >
         <NativeTabs.Trigger.Icon
           sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
           md="forum"
         />
         <NativeTabs.Trigger.Label hidden>Chat</NativeTabs.Trigger.Label>
+        {/* Globo con los mensajes sin leer de todos mis hogares. */}
+        <NativeTabs.Trigger.Badge hidden={unread === 0} selectedBackgroundColor={theme.colors.primary}>
+          {unread > 99 ? '99+' : String(unread)}
+        </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings" accessibilityLabel="Ajustes" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} md="settings" />

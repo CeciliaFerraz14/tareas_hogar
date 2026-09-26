@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import { Alert } from '../../../../lib/alert';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check, CheckCheck, SendHorizontal } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
@@ -14,6 +14,7 @@ import { Text } from '../../../../components/ui/Text';
 import { Avatar } from '../../../../components/ui/Avatar';
 import { ComposerBar } from '../../../../components/ui/ComposerBar';
 import { useAuthStore } from '../../../../store/authStore';
+import { useChatStore } from '../../../../store/chatStore';
 import { supabase } from '../../../../lib/supabase';
 import { subscribeToHouseTables } from '../../../../lib/realtime';
 import { messageStatus, type ChatMember, type ChatReceipt, type MessageStatus } from '../../../../lib/chatReceipts';
@@ -79,6 +80,16 @@ export default function ChatScreen() {
       }),
     );
   }, [houseId]);
+
+  // Mientras este chat está en pantalla, no se muestra su aviso flotante.
+  const setOpenChatHouseId = useChatStore((s) => s.setOpenChatHouseId);
+  useFocusEffect(
+    useCallback(() => {
+      if (!houseId) return;
+      setOpenChatHouseId(houseId);
+      return () => setOpenChatHouseId(null);
+    }, [houseId, setOpenChatHouseId]),
+  );
 
   // Hasta dónde le ha llegado / ha leído cada miembro (para los checks).
   const loadReceipts = useCallback(async () => {

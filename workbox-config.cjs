@@ -21,6 +21,9 @@ module.exports = {
   clientsClaim: true,
   cleanupOutdatedCaches: true,
 
+  // Código de las notificaciones push (mostrar y abrir al tocar): public/push-handler.js
+  importScripts: ['push-handler.js'],
+
   runtimeCaching: [
     {
       // Fotos de Supabase Storage (avatares y fotos de hogar): se muestran al momento

@@ -32,27 +32,18 @@ import { useAuthStore } from '../../../store/authStore';
 import { supabase } from '../../../lib/supabase';
 import { passwordResetRedirectUrl } from '../../../lib/authRedirect';
 import { requestNotificationPermission } from '../../../lib/notifications';
+import { disableWebPush, enableWebPush, getWebPushState, type WebPushState } from '../../../lib/webPush';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../../lib/images';
 import { useTheme } from '../../../lib/theme';
 
-type NotifPrefs = {
-  enabled: boolean;
-  tareas: boolean;
-  chat: boolean;
-  gastos: boolean;
-  compra: boolean;
-};
+/** De qué avisar. Se guarda en notification_prefs: lo lee la Edge Function send-push. */
+type NotifCategories = { tasks: boolean; chat: boolean; expenses: boolean; shopping: boolean };
 
-const DEFAULT_PREFS: NotifPrefs = {
-  enabled: false,
-  tareas: true,
-  chat: true,
-  gastos: true,
-  compra: true,
-};
+const ALL_ON: NotifCategories = { tasks: true, chat: true, expenses: true, shopping: true };
 
-function notifStorageKey(userId: string) {
-  return `notif_prefs_${userId}`;
+/** En la app nativa, el interruptor general solo se recuerda en el móvil. */
+function nativeNotifKey(userId: string) {
+  return `notif_enabled_${userId}`;
 }
 
 export default function SettingsScreen() {
@@ -67,7 +58,9 @@ export default function SettingsScreen() {
   const [editName, setEditName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
+  const [notifOn, setNotifOn] = useState(false);
+  const [categories, setCategories] = useState<NotifCategories>(ALL_ON);
+  const [pushState, setPushState] = useState<WebPushState | null>(null);
   const [sendingReset, setSendingReset] = useState(false);
 
   const loadProfile = useCallback(async () => {
@@ -80,9 +73,19 @@ export default function SettingsScreen() {
     if (data?.username) setUsername(data.username);
     if (data?.avatar_url) setAvatarUrl(data.avatar_url);
 
-    const stored = await AsyncStorage.getItem(notifStorageKey(user.id));
-    if (stored) {
-      try { setPrefs(JSON.parse(stored) as NotifPrefs); } catch { /* ignore corrupt data */ }
+    const { data: prefsRow } = await supabase
+      .from('notification_prefs')
+      .select('tasks, chat, expenses, shopping')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    setCategories(prefsRow ?? ALL_ON);
+
+    if (Platform.OS === 'web') {
+      const state = await getWebPushState();
+      setPushState(state);
+      setNotifOn(state === 'on');
+    } else {
+      setNotifOn((await AsyncStorage.getItem(nativeNotifKey(user.id))) === 'true');
     }
   }, [user]);
 
@@ -135,36 +138,65 @@ export default function SettingsScreen() {
 
   // ── notifications ─────────────────────────────────────────────────────────
 
-  async function persistPrefs(next: NotifPrefs) {
-    setPrefs(next);
-    if (user) await AsyncStorage.setItem(notifStorageKey(user.id), JSON.stringify(next));
-  }
-
   async function toggleMaster(value: boolean) {
+    if (Platform.OS === 'web') {
+      await toggleWebPush(value);
+      return;
+    }
     if (value) {
       const permission = await requestNotificationPermission();
       if (permission === 'unavailable') {
-        Alert.alert(
-          Platform.OS === 'web' ? 'No disponible en la web' : 'No disponible en Expo Go',
-          Platform.OS === 'web'
-            ? 'Las notificaciones funcionan en la app de iPhone y Android.'
-            : 'En Android, Expo Go no permite notificaciones. Funcionarán en la app instalada.',
-        );
+        Alert.alert('No disponible en Expo Go', 'En Android, Expo Go no permite notificaciones.');
         return;
       }
       if (permission !== 'granted') {
-        Alert.alert(
-          'Permisos necesarios',
-          'Activa las notificaciones en los ajustes del sistema para recibir avisos de HogarApp.',
-        );
+        Alert.alert('Permisos necesarios', 'Activa las notificaciones de HOMI en los ajustes del sistema.');
         return;
       }
     }
-    await persistPrefs({ ...prefs, enabled: value });
+    setNotifOn(value);
+    if (user) await AsyncStorage.setItem(nativeNotifKey(user.id), String(value));
   }
 
-  async function toggleSubPref(key: keyof Omit<NotifPrefs, 'enabled'>, value: boolean) {
-    await persistPrefs({ ...prefs, [key]: value });
+  // Web / PWA: pedir permiso y suscribir este navegador (tiene que ser al tocar).
+  async function toggleWebPush(value: boolean) {
+    try {
+      if (!value) {
+        await disableWebPush();
+        setNotifOn(false);
+        setPushState('off');
+        return;
+      }
+      const state = await enableWebPush();
+      setPushState(state);
+      setNotifOn(state === 'on');
+      if (state === 'needs-install') {
+        Alert.alert(
+          'Instala HOMI primero',
+          'En iPhone las notificaciones solo funcionan con la app instalada: en Safari, pulsa Compartir → «Añadir a pantalla de inicio» y ábrela desde ahí.',
+        );
+      } else if (state === 'denied') {
+        Alert.alert(
+          'Notificaciones bloqueadas',
+          'Las bloqueaste para esta web. Actívalas en los ajustes del navegador (o del iPhone → Notificaciones → HOMI).',
+        );
+      } else if (state === 'unsupported') {
+        Alert.alert('No disponible', 'Este navegador no admite notificaciones. Prueba con Chrome o con Safari (app instalada).');
+      }
+    } catch (e) {
+      Alert.alert('No se pudieron activar', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function toggleCategory(key: keyof NotifCategories, value: boolean) {
+    const previous = categories;
+    const next = { ...categories, [key]: value };
+    setCategories(next);
+    const { error } = await supabase.from('notification_prefs').upsert(next, { onConflict: 'user_id' });
+    if (error) {
+      setCategories(previous);
+      Alert.alert('No se pudo guardar', error.message);
+    }
   }
 
   // ── account ───────────────────────────────────────────────────────────────
@@ -270,39 +302,49 @@ export default function SettingsScreen() {
         <SettingsRow
           Icon={Bell}
           label="Activar notificaciones"
-          right={sw(prefs.enabled, toggleMaster)}
+          right={sw(notifOn, (v) => void toggleMaster(v))}
           first
+          last={!notifOn}
         />
-        {prefs.enabled ? (
+        {notifOn ? (
           <>
-            <SettingsRow
-              Icon={CheckSquare}
-              label="Tareas asignadas"
-              right={sw(prefs.tareas, (v) => void toggleSubPref('tareas', v))}
-              indent
-            />
             <SettingsRow
               Icon={MessageCircle}
               label="Mensajes del chat"
-              right={sw(prefs.chat, (v) => void toggleSubPref('chat', v))}
+              right={sw(categories.chat, (v) => void toggleCategory('chat', v))}
               indent
             />
             <SettingsRow
-              Icon={Wallet}
-              label="Nuevos gastos"
-              right={sw(prefs.gastos, (v) => void toggleSubPref('gastos', v))}
+              Icon={CheckSquare}
+              label="Tareas nuevas y asignadas"
+              right={sw(categories.tasks, (v) => void toggleCategory('tasks', v))}
               indent
             />
             <SettingsRow
               Icon={ShoppingCart}
               label="Lista de la compra"
-              right={sw(prefs.compra, (v) => void toggleSubPref('compra', v))}
+              right={sw(categories.shopping, (v) => void toggleCategory('shopping', v))}
+              indent
+            />
+            <SettingsRow
+              Icon={Wallet}
+              label="Gastos de la hucha"
+              right={sw(categories.expenses, (v) => void toggleCategory('expenses', v))}
               indent
               last
             />
           </>
         ) : null}
       </Card>
+      {Platform.OS !== 'web' ? (
+        <Text variant="caption" color="secondary" style={{ marginTop: -8, paddingHorizontal: 4 }}>
+          De momento los avisos llegan a la versión web instalada en la pantalla de inicio.
+        </Text>
+      ) : pushState === 'needs-install' ? (
+        <Text variant="caption" color="secondary" style={{ marginTop: -8, paddingHorizontal: 4 }}>
+          En iPhone, instala HOMI (Safari → Compartir → «Añadir a pantalla de inicio») para recibir avisos.
+        </Text>
+      ) : null}
 
       {/* ── CUENTA ── */}
       <SectionLabel>Cuenta</SectionLabel>
