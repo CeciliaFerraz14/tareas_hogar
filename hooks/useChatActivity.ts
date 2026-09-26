@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { subscribeToHouseTables, type HouseChange } from '../lib/realtime';
 import { dateKey } from '../lib/tasks';
 import { useChatStore } from '../store/chatStore';
+import { closeChatNotifications } from '../lib/webPush';
 
 const DEBOUNCE_MS = 400;
 
@@ -41,6 +42,10 @@ export function useChatActivity(userId: string | undefined) {
         useChatStore.getState().setUnreadByHouse(
           Object.fromEntries(data.map((s) => [s.house_id, s.unread_messages])),
         );
+        // Chats ya leídos: sus notificaciones del sistema sobran.
+        for (const s of data) {
+          if (s.unread_messages === 0) void closeChatNotifications(s.house_id);
+        }
       }, DEBOUNCE_MS);
     }
 

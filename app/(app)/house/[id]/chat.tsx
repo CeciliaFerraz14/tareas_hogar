@@ -15,6 +15,7 @@ import { Avatar } from '../../../../components/ui/Avatar';
 import { ComposerBar } from '../../../../components/ui/ComposerBar';
 import { useAuthStore } from '../../../../store/authStore';
 import { useChatStore } from '../../../../store/chatStore';
+import { closeChatNotifications } from '../../../../lib/webPush';
 import { supabase } from '../../../../lib/supabase';
 import { subscribeToHouseTables } from '../../../../lib/realtime';
 import { messageStatus, type ChatMember, type ChatReceipt, type MessageStatus } from '../../../../lib/chatReceipts';
@@ -87,6 +88,7 @@ export default function ChatScreen() {
     useCallback(() => {
       if (!houseId) return;
       setOpenChatHouseId(houseId);
+      void closeChatNotifications(houseId);
       return () => setOpenChatHouseId(null);
     }, [houseId, setOpenChatHouseId]),
   );

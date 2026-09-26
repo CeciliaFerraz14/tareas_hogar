@@ -116,3 +116,19 @@ export async function syncWebPushSubscription(): Promise<void> {
   const subscription = await registration?.pushManager.getSubscription();
   if (subscription) await saveSubscription(subscription);
 }
+
+/**
+ * Cierra las notificaciones del chat de un hogar (o de todos, sin houseId) que
+ * siguen en el centro de notificaciones: al leer el chat ya no tienen sentido.
+ * Todas las de un chat llevan el tag `chat-<houseId>` (ver send-push).
+ */
+export async function closeChatNotifications(houseId?: string): Promise<void> {
+  if (Platform.OS !== 'web' || !('serviceWorker' in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return;
+  const notifications = await registration.getNotifications();
+  for (const notification of notifications) {
+    const isChat = notification.tag.startsWith('chat-');
+    if (isChat && (!houseId || notification.tag === `chat-${houseId}`)) notification.close();
+  }
+}

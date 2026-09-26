@@ -12,15 +12,23 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'HOMI', {
-      body: data.body || '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/badge-96.png', // icono pequeño y monocromo de la barra de Android
-      tag: data.tag, // mismo tag = sustituye a la anterior (p. ej. un chat)
-      renotify: Boolean(data.tag), // …pero vuelve a sonar/vibrar
-      lang: 'es',
-      data: { url: data.url || '/' },
-    }),
+    (async () => {
+      await self.registration.showNotification(data.title || 'HOMI', {
+        body: data.body || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/badge-96.png', // icono pequeño y monocromo de la barra de Android
+        tag: data.tag, // mismo tag = sustituye a la anterior (p. ej. un chat)
+        renotify: Boolean(data.tag), // …pero vuelve a sonar/vibrar
+        lang: 'es',
+        data: { url: data.url || '/' },
+      });
+      // Número en el icono de la app (PWA instalada) también con la app cerrada:
+      // los avisos pendientes. Al abrir la app se ajusta a los mensajes sin leer.
+      if (self.navigator.setAppBadge) {
+        const pending = await self.registration.getNotifications();
+        await self.navigator.setAppBadge(pending.length).catch(() => {});
+      }
+    })(),
   );
 });
 
