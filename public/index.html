@@ -56,10 +56,29 @@
          sw.js, así que en desarrollo no se registra y no hay caché que moleste. -->
     <script>
       if ('serviceWorker' in navigator) {
+        // Versión nueva publicada: el SW nuevo toma el control (skipWaiting +
+        // clientsClaim en workbox-config.cjs) y se recarga UNA vez para usarla.
+        // La primera instalación no recarga: no hay versión vieja que cambiar.
+        var hadController = Boolean(navigator.serviceWorker.controller);
+        var reloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!hadController || reloading) return;
+          reloading = true;
+          window.location.reload();
+        });
+
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js').catch(function (err) {
-            console.warn('No se pudo registrar el service worker', err);
-          });
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function (registration) {
+              // Una PWA puede quedarse abierta días: al volver a ella, se busca versión nueva.
+              document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') registration.update().catch(function () {});
+              });
+            })
+            .catch(function (err) {
+              console.warn('No se pudo registrar el service worker', err);
+            });
         });
       }
     </script>
