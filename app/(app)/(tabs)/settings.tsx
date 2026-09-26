@@ -32,6 +32,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { supabase } from '../../../lib/supabase';
 import { passwordResetRedirectUrl } from '../../../lib/authRedirect';
 import { requestNotificationPermission } from '../../../lib/notifications';
+import { versionLabel } from '../../../lib/appInfo';
 import { disableWebPush, enableWebPush, getWebPushState, type WebPushState } from '../../../lib/webPush';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../../lib/images';
 import { useTheme } from '../../../lib/theme';
@@ -372,6 +373,17 @@ export default function SettingsScreen() {
           last
         />
       </Card>
+
+      {/* Versión: para saber qué tiene instalado cada uno al reportar un fallo. */}
+      <Text
+        variant="caption"
+        color="secondary"
+        align="center"
+        selectable
+        style={{ marginTop: theme.spacing.sm, opacity: 0.8 }}
+      >
+        {versionLabel()}
+      </Text>
 
       {/* ── edit name modal ── */}
       <Modal visible={editOpen} animationType="slide" transparent onRequestClose={() => setEditOpen(false)}>

@@ -3,7 +3,7 @@
     "name": "HogarApp",
     "slug": "HogarApp",
     "scheme": "hogarapp",
-    "version": "1.0.0",
+    "version": "0.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -46,6 +46,9 @@
           "imageWidth": 200
         }
       ]
-    ]
+    ],
+    "extra": {
+      "releaseStage": "beta"
+    }
   }
 }

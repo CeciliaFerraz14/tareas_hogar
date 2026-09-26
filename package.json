@@ -1,13 +1,13 @@
 {
   "name": "hogarapp",
-  "version": "1.0.0",
+  "version": "0.8.0-beta",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export -p web && workbox generateSW workbox-config.cjs",
+    "build:web": "EXPO_PUBLIC_COMMIT_SHA=${VERCEL_GIT_COMMIT_SHA:-$(git rev-parse HEAD 2>/dev/null)} expo export -p web && workbox generateSW workbox-config.cjs",
     "preview:web": "npx serve dist --single --listen 3000",
     "icons:pwa": "node scripts/generate-pwa-icons.mjs"
   },
