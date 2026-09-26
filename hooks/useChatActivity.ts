@@ -31,7 +31,12 @@ export function useChatActivity(userId: string | undefined) {
     // Varios mensajes seguidos → una sola llamada.
     function markDelivered() {
       if (deliverTimer) clearTimeout(deliverTimer);
-      deliverTimer = setTimeout(() => { void supabase.rpc('mark_my_chats_delivered'); }, DEBOUNCE_MS);
+      // Ojo: supabase-js no envía la petición hasta que se espera (then/await).
+      deliverTimer = setTimeout(() => {
+        void supabase.rpc('mark_my_chats_delivered').then(({ error }) => {
+          if (error) console.warn('No se pudieron marcar los mensajes como llegados', error.message);
+        });
+      }, DEBOUNCE_MS);
     }
 
     function reloadUnread() {

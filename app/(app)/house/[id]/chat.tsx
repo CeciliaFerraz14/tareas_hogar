@@ -128,7 +128,12 @@ export default function ChatScreen() {
     const lastFromOthers = [...messages].reverse().find((m) => m.user_id !== user?.id);
     if (!lastFromOthers || lastMarkedRead.current === lastFromOthers.created_at) return;
     lastMarkedRead.current = lastFromOthers.created_at;
-    void supabase.rpc('mark_chat_read', { p_house_id: houseId, p_up_to: lastFromOthers.created_at });
+    // Ojo: supabase-js no envía la petición hasta que se espera (then/await).
+    void supabase
+      .rpc('mark_chat_read', { p_house_id: houseId, p_up_to: lastFromOthers.created_at })
+      .then(({ error }) => {
+        if (error) console.warn('No se pudo marcar el chat como leído', error.message);
+      });
   }, [houseId, messages, appActive, user?.id]);
 
   // scroll to bottom when messages update
