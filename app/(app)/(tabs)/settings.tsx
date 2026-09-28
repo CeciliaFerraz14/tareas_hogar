@@ -317,7 +317,7 @@ export default function SettingsScreen() {
             />
             <SettingsRow
               Icon={CheckSquare}
-              label="Tareas nuevas y asignadas"
+              label="Tareas nuevas, asignadas y hechas"
               right={sw(categories.tasks, (v) => void toggleCategory('tasks', v))}
               indent
             />

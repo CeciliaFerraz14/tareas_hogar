@@ -9,6 +9,14 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.9.0-beta] – 2026-09-28
+
+### Añadido
+- Aviso a los demás miembros cuando alguien marca una tarea como hecha (y
+  «ha hecho tu tarea» si era la tuya).
+- Compra: «¡X está haciendo la compra!» al tachar el primer producto (una vez
+  por viaje) y «¡Compra hecha!» al tachar lo último de la lista.
+
 ## [0.8.0-beta] – 2026-09-26
 
 ### Añadido

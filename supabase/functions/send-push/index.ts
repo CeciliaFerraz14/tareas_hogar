@@ -1,22 +1,25 @@
 // Edge Function send-push: envía notificaciones Web Push a los demás miembros
-// del hogar cuando alguien escribe en el chat, crea una tarea, añade algo a la
-// compra o apunta un gasto. La llaman los triggers de la base de datos (pg_net)
-// con la cabecera x-push-secret; no la llama la app.
+// del hogar cuando alguien escribe en el chat, crea o tacha una tarea, añade o
+// tacha algo de la compra o apunta un gasto. La llaman los triggers de la base
+// de datos (pg_net) con la cabecera x-push-secret; no la llama la app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
 type Kind = 'chat' | 'tasks' | 'shopping' | 'expenses';
 type Payload = { title: string; body: string; url: string; tag: string };
 type Row = Record<string, unknown>;
+// 'created' = algo nuevo (por defecto). El resto los manda private.enqueue_done_push.
+type PushEvent = 'created' | 'task_done' | 'shopping_started' | 'shopping_finished';
 
 const KIND_BY_TABLE: Record<string, Kind> = {
   house_messages: 'chat',
   tasks: 'tasks',
+  task_completions: 'tasks',
   shopping_items: 'shopping',
   expenses: 'expenses',
 };
 
-// Quién lo ha hecho, según la tabla.
+// Quién lo ha creado, según la tabla. (Al tachar, lo manda el trigger en actor_id.)
 const ACTOR_COLUMN: Record<Kind, string> = {
   chat: 'user_id',
   tasks: 'created_by',
@@ -67,12 +70,25 @@ Deno.serve(async (req) => {
   const cfg = await getConfig();
   if (req.headers.get('x-push-secret') !== cfg.webhook_secret) return json({ error: 'unauthorized' }, 401);
 
-  const { table, record } = (await req.json()) as { table: string; record: Row };
+  const { table, record, event = 'created', actor_id } = (await req.json()) as {
+    table: string;
+    record: Row;
+    event?: PushEvent;
+    actor_id?: string;
+  };
   const kind = KIND_BY_TABLE[table];
   if (!kind) return json({ skipped: 'table' });
 
   const houseId = record.house_id as string;
-  const actorId = (record[ACTOR_COLUMN[kind]] as string | null) ?? null;
+  const actorId = event === 'created' ? ((record[ACTOR_COLUMN[kind]] as string | null) ?? null) : (actor_id ?? null);
+
+  // Una tarea semanal hecha llega como fila de task_completions: falta la tarea.
+  let task: Row = record;
+  if (table === 'task_completions') {
+    const { data } = await admin.from('tasks').select('id, title, assigned_to').eq('id', record.task_id as string).maybeSingle();
+    if (!data) return json({ skipped: 'task' });
+    task = data;
+  }
 
   const [houseRes, actorRes, membersRes] = await Promise.all([
     admin.from('houses').select('name').eq('id', houseId).maybeSingle(),
@@ -115,6 +131,30 @@ Deno.serve(async (req) => {
   if (!subs || subs.length === 0) return json({ sent: 0 });
 
   function payloadFor(userId: string): Payload {
+    switch (event) {
+      case 'task_done':
+        return {
+          title: task.assigned_to === userId ? `✅ ${actorName} ha hecho tu tarea` : `✅ ${actorName} ha hecho una tarea`,
+          body: `${task.title} · ${houseName}`,
+          url: `/house/${houseId}/tareas`,
+          tag: `task-done-${task.id}`,
+        };
+      // Los dos avisos del "viaje" comparten tag: «Compra hecha» sustituye al primero.
+      case 'shopping_started':
+        return {
+          title: `🛒 ¡${actorName} está haciendo la compra!`,
+          body: `Si te falta algo, apúntalo ya en la lista · ${houseName}`,
+          url: `/house/${houseId}/compra`,
+          tag: `shopping-trip-${houseId}`,
+        };
+      case 'shopping_finished':
+        return {
+          title: '✅ ¡Compra hecha!',
+          body: `${actorName} ha tachado toda la lista de ${houseName}`,
+          url: `/house/${houseId}/compra`,
+          tag: `shopping-trip-${houseId}`,
+        };
+    }
     switch (kind) {
       case 'chat':
         return {
