@@ -5,6 +5,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Check, Plus, ShoppingCart, Trash2, X } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { TapeLabel } from '../../../components/ui/Labels';
 import { Card } from '../../../components/ui/Card';
 import { ComposerBar } from '../../../components/ui/ComposerBar';
 import { useAuthStore } from '../../../store/authStore';
@@ -209,14 +210,14 @@ function CompraScreen({ house }: { house: MyHouse }) {
                 <ShoppingCart size={32} color={theme.colors.textOnFill} />
               </View>
               <Text variant="heading">La lista está vacía</Text>
-              <Text variant="body" color="secondary" align="center">
+              <Text variant="body" align="center">
                 Apunta abajo lo que falte en casa.
               </Text>
             </View>
           ) : (
             <>
               {pending.length === 0 ? (
-                <Text variant="bodyBold" color="secondary" align="center" style={{ paddingVertical: 16 }}>
+                <Text variant="bodyBold" align="center" style={{ paddingVertical: 16 }}>
                   ¡Todo comprado! 🎉
                 </Text>
               ) : (
@@ -226,9 +227,9 @@ function CompraScreen({ house }: { house: MyHouse }) {
               {purchased.length > 0 ? (
                 <View style={{ gap: 10, marginTop: theme.spacing.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text variant="label" color="secondary" style={{ flex: 1 }}>
-                      En el carro · {purchased.length}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <TapeLabel>{`En el carro · ${purchased.length}`}</TapeLabel>
+                    </View>
                     <Pressable
                       onPress={clearPurchased}
                       accessibilityRole="button"

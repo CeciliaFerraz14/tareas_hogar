@@ -250,7 +250,7 @@ export default function MascotasScreen() {
         {pets.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 48, gap: 8 }}>
             <Text style={{ fontSize: 48 }}>🐾</Text>
-            <Text variant="body" color="secondary">Aún no hay mascotas registradas.</Text>
+            <Text variant="bodyBold">Aún no hay mascotas registradas.</Text>
           </View>
         ) : (
           pets.map((pet) => {

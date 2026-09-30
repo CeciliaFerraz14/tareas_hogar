@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Moon, Plus, ShoppingCart, Sun } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
+import { Sticker } from '../../../../components/ui/Labels';
 import { Card } from '../../../../components/ui/Card';
 import { Avatar } from '../../../../components/ui/Avatar';
 import { Button } from '../../../../components/ui/Button';
@@ -257,9 +258,9 @@ export default function MenuScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text variant="heading">Menú semanal</Text>
-          <Text variant="caption" color="secondary">
+          <Sticker>
             {planned === 0 ? 'Nada planeado' : `${planned} de ${days.length * MEAL_SLOTS.length} comidas planeadas`}
-          </Text>
+          </Sticker>
         </View>
         <Pressable
           onPress={() => router.push(`/(app)/house/${houseId}/recetas`)}
@@ -295,7 +296,7 @@ export default function MenuScreen() {
           accessibilityLabel={weekOffset === 0 ? weekTitle(0, monday) : 'Volver a esta semana'}
         >
           <Text variant="bodyBold">{weekTitle(weekOffset, monday)}</Text>
-          <Text variant="caption" color="secondary">
+          <Text variant="caption">
             {weekOffset === 0 || Math.abs(weekOffset) === 1 ? weekRangeLabel(monday) : 'Toca para volver a hoy'}
           </Text>
         </Pressable>
@@ -359,7 +360,7 @@ export default function MenuScreen() {
             />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: theme.spacing.md }}>
               <ShoppingCart size={14} color={theme.colors.textSecondary} />
-              <Text variant="caption" color="secondary" align="center" style={{ flexShrink: 1 }}>
+              <Text variant="caption" align="center" style={{ flexShrink: 1, fontFamily: theme.typography.family.bold }}>
                 {dishesWithIngredients === 0
                   ? 'Elige platos del recetario para pasar sus ingredientes a la lista.'
                   : `${dishesWithIngredients} ${dishesWithIngredients === 1 ? 'plato' : 'platos'} con receta del ${shortDate(shoppingFromKey)} al ${shortDate(sundayKey)}`}

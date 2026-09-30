@@ -217,7 +217,7 @@ function ChatScreen({ house }: { house: MyHouse }) {
           onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
-              <Text variant="body" color="secondary">Sé el primero en escribir algo.</Text>
+              <Text variant="bodyBold">Sé el primero en escribir algo.</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -239,7 +239,7 @@ function ChatScreen({ house }: { house: MyHouse }) {
                 ) : null}
                 <View style={{ maxWidth: '75%', gap: 2 }}>
                   {!isMe && msg.sender_name ? (
-                    <Text variant="caption" color="secondary" style={{ marginLeft: 4 }}>{msg.sender_name}</Text>
+                    <Text variant="caption" style={{ marginLeft: 4, fontFamily: theme.typography.family.bold }}>{msg.sender_name}</Text>
                   ) : null}
                   <View style={{
                     backgroundColor: isMe ? theme.colors.primary : theme.colors.surface,
@@ -252,7 +252,7 @@ function ChatScreen({ house }: { house: MyHouse }) {
                     <Text variant="body" color={isMe ? 'inverse' : 'primary'}>{msg.content}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: isMe ? 'flex-end' : 'flex-start', marginHorizontal: 4 }}>
-                    <Text variant="caption" color="secondary">{formatTime(msg.created_at)}</Text>
+                    <Text variant="caption">{formatTime(msg.created_at)}</Text>
                     {isMe ? <ReceiptTicks status={statusById.get(msg.id) ?? 'sent'} /> : null}
                   </View>
                 </View>

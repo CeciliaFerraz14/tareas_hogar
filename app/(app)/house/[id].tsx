@@ -14,6 +14,7 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { TapeLabel } from '../../../components/ui/Labels';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Avatar } from '../../../components/ui/Avatar';
@@ -262,7 +263,7 @@ export default function HouseDetail() {
         >
           <ArrowLeft size={24} color={theme.colors.textPrimary} />
         </Pressable>
-        <Text variant="caption" color="secondary" style={{ flex: 1, marginLeft: 8 }}>
+        <Text variant="bodyBold" style={{ flex: 1, marginLeft: 8 }}>
           Ajustes del hogar
         </Text>
         <Pressable
@@ -308,9 +309,7 @@ export default function HouseDetail() {
       </View>
 
       <View style={{ gap: 8 }}>
-        <Text variant="label" color="secondary">
-          Miembros ({members.length})
-        </Text>
+        <TapeLabel>{`Miembros (${members.length})`}</TapeLabel>
         <Card>
           <View style={{ gap: 14 }}>
             {members.map((m) => (

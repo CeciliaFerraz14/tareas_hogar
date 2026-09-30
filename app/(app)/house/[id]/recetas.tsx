@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, BookOpen, ChevronRight } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
+import { Sticker } from '../../../../components/ui/Labels';
 import { Card } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { PlusButton } from '../../../../components/ui/PlusButton';
@@ -70,9 +71,9 @@ export default function RecetasScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text variant="heading">Recetario</Text>
-          <Text variant="caption" color="secondary">
+          <Sticker>
             {recipes.length === 0 ? 'Vuestros platos de siempre' : `${recipes.length} ${recipes.length === 1 ? 'receta' : 'recetas'}`}
-          </Text>
+          </Sticker>
         </View>
         <PlusButton onPress={() => openRecipe(null)} accessibilityLabel="Nueva receta" />
       </View>
@@ -114,12 +115,12 @@ export default function RecetasScreen() {
               <BookOpen size={32} color={theme.colors.textOnFill} />
             </View>
             <Text variant="heading">Aún no hay recetas</Text>
-            <Text variant="body" color="secondary" align="center">
+            <Text variant="body" align="center">
               Apunta vuestros platos con sus ingredientes. Luego, desde el menú, podréis pasarlos a la compra con un toque.
             </Text>
           </View>
         ) : visible.length === 0 ? (
-          <Text variant="body" color="secondary" align="center" style={{ paddingVertical: 32 }}>
+          <Text variant="bodyBold" align="center" style={{ paddingVertical: 32 }}>
             Ninguna receta coincide con «{query.trim()}».
           </Text>
         ) : (

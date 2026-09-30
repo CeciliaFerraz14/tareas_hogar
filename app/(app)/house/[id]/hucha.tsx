@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
+import { TapeLabel } from '../../../../components/ui/Labels';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { Input } from '../../../../components/ui/Input';
@@ -253,7 +254,7 @@ export default function HuchaScreen() {
         {/* member balances */}
         {members.length > 1 ? (
           <View style={{ gap: 8 }}>
-            <Text variant="label" color="secondary">Balances del hogar</Text>
+            <TapeLabel>Balances del hogar</TapeLabel>
             {members.map((m) => {
               const bal = memberBalance[m.user_id] ?? 0;
               const isMe = m.user_id === myId;
@@ -279,12 +280,10 @@ export default function HuchaScreen() {
 
         {/* expenses */}
         <View style={{ gap: 8 }}>
-          <Text variant="label" color="secondary">
-            Gastos ({expenses.length})
-          </Text>
+          <TapeLabel>{`Gastos (${expenses.length})`}</TapeLabel>
           {expenses.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text variant="body" color="secondary">Aún no hay gastos registrados.</Text>
+              <Text variant="bodyBold">Aún no hay gastos registrados.</Text>
             </View>
           ) : (
             expenses.map((exp) => {

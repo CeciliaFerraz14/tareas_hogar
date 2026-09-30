@@ -9,6 +9,14 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.15.1-beta] – 2026-09-30
+
+### Arreglado
+- Los subtítulos sobre el fondo de acuarela (o de madera, en modo oscuro) se
+  leían mal. Ahora van en una **pegatina** crema con borde de tinta, los
+  títulos de sección («Para hoy», «En el carro», «Gastos»…) en un trozo de
+  **cinta mostaza**, y el resto de textos sueltos sobre el fondo, en tinta.
+
 ## [0.15.0-beta] – 2026-09-30
 
 ### Cambiado

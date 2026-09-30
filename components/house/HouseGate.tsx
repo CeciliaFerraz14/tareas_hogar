@@ -48,7 +48,7 @@ function NoHouses() {
       <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
         <HouseIllustration size={96} />
         <Text variant="title" align="center">Tu primer hogar</Text>
-        <Text variant="body" color="secondary" align="center">
+        <Text variant="body" align="center">
           Crea un hogar para tu piso o únete al de tus compis con el código que te hayan pasado.
         </Text>
       </View>
@@ -69,7 +69,7 @@ function ChooseHouse({ houses }: { houses: MyHouse[] }) {
       <View style={{ alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
         <HouseIllustration size={72} />
         <Text variant="title" align="center">¿En qué hogar estás?</Text>
-        <Text variant="body" color="secondary" align="center">
+        <Text variant="body" align="center">
           Luego puedes cambiar cuando quieras tocando su nombre arriba.
         </Text>
       </View>

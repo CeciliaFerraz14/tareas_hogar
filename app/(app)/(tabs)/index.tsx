@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MessageCircle, ShoppingCart } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
+import { TapeLabel } from '../../../components/ui/Labels';
 import { HouseGate } from '../../../components/house/HouseGate';
 import { TabHeader } from '../../../components/house/HouseSwitcher';
 import { TodayTasks } from '../../../components/home/TodayTasks';
@@ -97,9 +98,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   const theme = useTheme();
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <Text variant="label" color="secondary" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-        {title}
-      </Text>
+      <TapeLabel>{title}</TapeLabel>
       {children}
     </View>
   );

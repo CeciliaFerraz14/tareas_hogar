@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../components/ui/Screen';
 import { Text } from '../../components/ui/Text';
+import { TapeLabel } from '../../components/ui/Labels';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -362,12 +363,12 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
       {Platform.OS !== 'web' ? (
-        <Text variant="caption" color="secondary" style={{ marginTop: -8, paddingHorizontal: 4 }}>
+        <Text variant="caption" style={{ marginTop: -8, paddingHorizontal: 4 }}>
           De momento los avisos llegan a la versión web instalada en la pantalla de inicio.
         </Text>
       ) : pushState === 'needs-install' ? (
         <Pressable onPress={() => router.push('/instalar')} accessibilityRole="link" style={{ marginTop: -8, paddingHorizontal: 4 }}>
-          <Text variant="caption" color="secondary">
+          <Text variant="caption">
             En iPhone, los avisos solo llegan con HOMI instalada.{' '}
             <Text variant="caption" color="accent" style={{ textDecorationLine: 'underline' }}>Ver cómo instalarla</Text>
           </Text>
@@ -426,7 +427,6 @@ export default function SettingsScreen() {
       {/* Versión: para saber qué tiene instalado cada uno al reportar un fallo. */}
       <Text
         variant="caption"
-        color="secondary"
         align="center"
         selectable
         style={{ marginTop: theme.spacing.sm, opacity: 0.8 }}
@@ -469,16 +469,7 @@ export default function SettingsScreen() {
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: string }) {
-  const theme = useTheme();
-  return (
-    <Text
-      variant="label"
-      color="secondary"
-      style={{ paddingHorizontal: 4, marginBottom: -4 }}
-    >
-      {children.toUpperCase()}
-    </Text>
-  );
+  return <TapeLabel style={{ marginBottom: -4 }}>{children}</TapeLabel>;
 }
 
 type SettingsRowProps = {

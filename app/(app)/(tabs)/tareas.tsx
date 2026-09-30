@@ -189,7 +189,7 @@ function TareasScreen({ house }: { house: MyHouse }) {
 
         {visibleTasks.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
-            <Text variant="body" color="secondary">
+            <Text variant="bodyBold">
               Sin tareas para este día.
             </Text>
           </View>
