@@ -110,6 +110,9 @@ const dark: ThemeColors = {
 export const brand = {
   gradient: ['#FCEFE6', '#F2B79A', '#EC8A5C', '#E46A36'] as const,
   tape: ['#F9D56A', '#F4B537', '#EFA42A'] as const,
+  // Papel kraft de los subtítulos (components/ui/Labels.tsx).
+  kraft: '#D8B584',
+  kraftFiber: '#B8905E',
   ...palette,
 } as const;
 
