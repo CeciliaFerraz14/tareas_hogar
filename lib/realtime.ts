@@ -9,7 +9,8 @@ export type HouseBroadcastTable =
   | 'house_messages'
   | 'chat_messages'
   | 'house_chat_reads'
-  | 'meal_plan_entries';
+  | 'meal_plan_entries'
+  | 'recipes';
 
 /** Lo que publica realtime.broadcast_changes en cada cambio. */
 export type HouseChange = {

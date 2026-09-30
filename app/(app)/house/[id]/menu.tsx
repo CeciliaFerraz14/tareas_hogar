@@ -2,21 +2,23 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { Alert } from '../../../../lib/alert';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, ChevronLeft, ChevronRight, Moon, Plus, Sun } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Moon, Plus, ShoppingCart, Sun } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
 import { Card } from '../../../../components/ui/Card';
 import { Avatar } from '../../../../components/ui/Avatar';
+import { Button } from '../../../../components/ui/Button';
 import { MealFormModal, type MealMember } from '../../../../components/menu/MealFormModal';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../lib/supabase';
 import { subscribeToHouseTables } from '../../../../lib/realtime';
 import { useTheme } from '../../../../lib/theme';
-import { DAY_NAMES, dateKey, weekDayOf } from '../../../../lib/tasks';
+import { DAY_NAMES, dateKey, parseDateKey, shortDate, weekDayOf } from '../../../../lib/tasks';
 import {
   MEAL_SLOTS,
   addDays,
   isMealSlot,
+  loadRecipes,
   mealKey,
   startOfWeek,
   weekDays,
@@ -24,6 +26,7 @@ import {
   weekTitle,
   type MealEntry,
   type MealSlot,
+  type Recipe,
 } from '../../../../lib/meals';
 
 type OpenSlot = { date: Date; slot: MealSlot; entry: MealEntry | null };
@@ -38,6 +41,8 @@ export default function MenuScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [entries, setEntries] = useState<Map<string, MealEntry>>(new Map());
   const [members, setMembers] = useState<MealMember[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [sendingToShopping, setSendingToShopping] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // El hueco abierto se guarda aparte de `formOpen` para que la hoja se cierre con su animación.
   const [openSlot, setOpenSlot] = useState<OpenSlot | null>(null);
@@ -49,10 +54,10 @@ export default function MenuScreen() {
 
   const loadData = useCallback(async () => {
     if (!houseId) return;
-    const [entriesRes, membersRes] = await Promise.all([
+    const [entriesRes, membersRes, recipesList] = await Promise.all([
       supabase
         .from('meal_plan_entries')
-        .select('id, date, slot, title, cook_id')
+        .select('id, date, slot, title, cook_id, recipe_id')
         .eq('house_id', houseId)
         .gte('date', dateKey(monday))
         .lte('date', dateKey(addDays(monday, 6))),
@@ -61,6 +66,8 @@ export default function MenuScreen() {
         .select('user_id, users:user_id (email, username, avatar_url)')
         .eq('house_id', houseId)
         .order('joined_at', { ascending: true }),
+      // Sin recetario el menú sigue funcionando: solo faltan las sugerencias.
+      loadRecipes(houseId).catch(() => null),
     ]);
     if (entriesRes.error) { Alert.alert('Error al cargar el menú', entriesRes.error.message); return; }
     const byKey = new Map<string, MealEntry>();
@@ -68,6 +75,7 @@ export default function MenuScreen() {
       if (isMealSlot(e.slot)) byKey.set(mealKey(e.date, e.slot), { ...e, slot: e.slot });
     }
     setEntries(byKey);
+    if (recipesList) setRecipes(recipesList);
     if (membersRes.data) {
       setMembers(
         membersRes.data.map((m) => ({
@@ -84,14 +92,63 @@ export default function MenuScreen() {
 
   async function handleRefresh() { setRefreshing(true); await loadData(); setRefreshing(false); }
 
-  // Realtime por Broadcast: si alguien cambia un plato, se ve al momento.
+  // Realtime por Broadcast: si alguien cambia un plato o una receta, se ve al momento.
   useEffect(() => {
     if (!houseId) return;
-    return subscribeToHouseTables(houseId, ['meal_plan_entries'], () => { void loadData(); });
+    return subscribeToHouseTables(houseId, ['meal_plan_entries', 'recipes'], () => { void loadData(); });
   }, [houseId, loadData]);
 
   const memberById = (id: string | null) => members.find((m) => m.user_id === id) ?? null;
   const planned = days.reduce((n, day) => n + MEAL_SLOTS.filter(({ key }) => entries.has(mealKey(day, key))).length, 0);
+
+  // Pasar a la compra: los platos con receta de hoy (o del lunes, si la semana
+  // aún no ha empezado) al domingo. Lo que ya pasó no hace falta comprarlo.
+  const sundayKey = dateKey(addDays(monday, 6));
+  const shoppingFromKey = dateKey(monday) > todayKey ? dateKey(monday) : todayKey;
+  const weekIsOver = sundayKey < todayKey;
+  const recipeById = new Map(recipes.map((r) => [r.id, r]));
+  const dishesWithIngredients = [...entries.values()].filter(
+    (e) => e.date >= shoppingFromKey && e.recipe_id && (recipeById.get(e.recipe_id)?.ingredients.length ?? 0) > 0,
+  ).length;
+
+  function confirmAddToShopping() {
+    const from = shoppingFromKey === todayKey ? 'de hoy' : `del ${DAY_NAMES[weekDayOf(parseDateKey(shoppingFromKey))]}`;
+    Alert.alert(
+      'Pasar a la compra',
+      `Se añadirán a la lista los ingredientes de los platos ${from} al domingo. Lo que ya esté pendiente en la lista no se repite.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Añadir', onPress: () => void addToShopping() },
+      ],
+    );
+  }
+
+  async function addToShopping() {
+    if (!houseId) return;
+    setSendingToShopping(true);
+    const { data, error } = await supabase.rpc('add_meals_to_shopping', {
+      p_house_id: houseId,
+      p_from: shoppingFromKey,
+      p_to: sundayKey,
+    });
+    setSendingToShopping(false);
+    if (error) { Alert.alert('No se pudo pasar a la compra', error.message); return; }
+    const added = data?.[0]?.added ?? 0;
+    const already = data?.[0]?.already_listed ?? 0;
+    if (added === 0) {
+      Alert.alert('Ya estaba todo', 'Los ingredientes de estos platos ya están pendientes en la lista de la compra.');
+      return;
+    }
+    Alert.alert(
+      '¡A la lista!',
+      `${added === 1 ? 'Se ha añadido 1 ingrediente' : `Se han añadido ${added} ingredientes`} a la compra` +
+        (already > 0 ? ` (${already} ya ${already === 1 ? 'estaba' : 'estaban'}).` : '.'),
+      [
+        { text: 'Cerrar', style: 'cancel' },
+        { text: 'Ver la lista', onPress: () => router.push(`/(app)/house/${houseId}/compra`) },
+      ],
+    );
+  }
 
   const gutter = theme.spacing.md;
 
@@ -118,7 +175,12 @@ export default function MenuScreen() {
         <Icon size={18} color={slot === 'lunch' ? theme.colors.mustard : theme.colors.accent} strokeWidth={2.4} />
         <Text variant="caption" color="secondary" style={{ width: 58 }}>{label}</Text>
         {entry ? (
-          <Text variant="bodyBold" style={{ flex: 1 }} numberOfLines={2}>{entry.title}</Text>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text variant="bodyBold" style={{ flexShrink: 1 }} numberOfLines={2}>{entry.title}</Text>
+            {entry.recipe_id ? (
+              <BookOpen size={14} color={theme.colors.textSecondary} accessibilityLabel="Del recetario" />
+            ) : null}
+          </View>
         ) : (
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Plus size={14} color={theme.colors.textSecondary} />
@@ -143,6 +205,27 @@ export default function MenuScreen() {
             {planned === 0 ? 'Nada planeado' : `${planned} de ${days.length * MEAL_SLOTS.length} comidas planeadas`}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push(`/(app)/house/${houseId}/recetas`)}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir el recetario"
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: theme.radii.pill,
+            borderWidth: theme.borderWidth,
+            borderColor: theme.colors.outline,
+            backgroundColor: theme.colors.surface,
+            ...(pressed ? theme.shadows.none : theme.shadows.small),
+            ...(pressed ? { transform: [{ translateX: 2 }, { translateY: 2 }] } : null),
+          })}
+        >
+          <BookOpen size={16} color={theme.colors.textPrimary} />
+          <Text variant="label">Recetas</Text>
+        </Pressable>
       </View>
 
       {/* cambiar de semana */}
@@ -197,6 +280,26 @@ export default function MenuScreen() {
             </Card>
           );
         })}
+
+        {/* pasar a la compra */}
+        {weekIsOver ? null : (
+          <View style={{ gap: 6, marginTop: theme.spacing.sm }}>
+            <Button
+              title="Pasar ingredientes a la compra"
+              onPress={confirmAddToShopping}
+              loading={sendingToShopping}
+              disabled={dishesWithIngredients === 0}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: theme.spacing.md }}>
+              <ShoppingCart size={14} color={theme.colors.textSecondary} />
+              <Text variant="caption" color="secondary" align="center" style={{ flexShrink: 1 }}>
+                {dishesWithIngredients === 0
+                  ? 'Elige platos del recetario para pasar sus ingredientes a la lista.'
+                  : `${dishesWithIngredients} ${dishesWithIngredients === 1 ? 'plato' : 'platos'} con receta del ${shortDate(shoppingFromKey)} al ${shortDate(sundayKey)}`}
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {houseId && user && openSlot ? (
@@ -207,6 +310,7 @@ export default function MenuScreen() {
           houseId={houseId}
           userId={user.id}
           members={members}
+          recipes={recipes}
           date={openSlot.date}
           slot={openSlot.slot}
           entry={openSlot.entry}

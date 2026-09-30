@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { Alert } from '../../lib/alert';
-import { Trash2 } from 'lucide-react-native';
+import { BookOpen, Trash2 } from 'lucide-react-native';
 import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -9,7 +9,19 @@ import { Avatar } from '../ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/theme';
 import { DAY_NAMES, dateKey, shortDate, weekDayOf } from '../../lib/tasks';
-import { MEAL_SUGGESTIONS, MEAL_TITLE_MAX, slotLabel, type MealEntry, type MealSlot } from '../../lib/meals';
+import {
+  MEAL_SUGGESTIONS,
+  MEAL_TITLE_MAX,
+  ingredientsSummary,
+  normalizeTitle,
+  slotLabel,
+  type MealEntry,
+  type MealSlot,
+  type Recipe,
+} from '../../lib/meals';
+
+/** Cuántas recetas se sugieren a la vez. */
+const MAX_RECIPE_CHIPS = 8;
 
 export type MealMember = {
   user_id: string;
@@ -26,6 +38,8 @@ type MealFormModalProps = {
   houseId: string;
   userId: string;
   members: MealMember[];
+  /** El recetario del hogar, para elegir el plato de ahí. */
+  recipes: Recipe[];
   /** El hueco que se está rellenando. */
   date: Date;
   slot: MealSlot;
@@ -41,6 +55,7 @@ export function MealFormModal({
   houseId,
   userId,
   members,
+  recipes,
   date,
   slot,
   entry,
@@ -50,6 +65,7 @@ export function MealFormModal({
 
   const [title, setTitle] = useState('');
   const [cookId, setCookId] = useState<string | null>(null);
+  const [recipeId, setRecipeId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -58,8 +74,29 @@ export function MealFormModal({
     if (!visible) return;
     setTitle(entry?.title ?? '');
     setCookId(entry?.cook_id ?? null);
+    setRecipeId(entry?.recipe_id ?? null);
     // Solo al abrir: no pisar lo que se está escribiendo si la pantalla recarga.
   }, [visible]);
+
+  const selectedRecipe = recipes.find((r) => r.id === recipeId) ?? null;
+
+  // Si se cambia el texto y ya no es el de la receta elegida, deja de ser esa receta.
+  function changeTitle(text: string) {
+    setTitle(text);
+    if (selectedRecipe && normalizeTitle(text) !== normalizeTitle(selectedRecipe.title)) setRecipeId(null);
+  }
+
+  function pickRecipe(recipe: Recipe) {
+    setTitle(recipe.title);
+    setRecipeId(recipe.id);
+  }
+
+  // Recetas que encajan con lo escrito (todas si no hay nada escrito).
+  const query = normalizeTitle(title);
+  const recipeChips = (query && !selectedRecipe
+    ? recipes.filter((r) => normalizeTitle(r.title).includes(query))
+    : recipes
+  ).slice(0, MAX_RECIPE_CHIPS);
 
   async function save() {
     const trimmed = title.trim();
@@ -67,16 +104,18 @@ export function MealFormModal({
       Alert.alert('¿Qué se come?', 'Escribe el plato o elige una de las opciones rápidas.');
       return;
     }
+    // Escrito a mano pero igual que una receta del recetario: se enlaza con ella.
+    const recipe = selectedRecipe ?? recipes.find((r) => normalizeTitle(r.title) === normalizeTitle(trimmed)) ?? null;
+    const fields = { title: recipe?.title ?? trimmed, cook_id: cookId, recipe_id: recipe?.id ?? null };
     setSaving(true);
     try {
       const { error } = entry
-        ? await supabase.from('meal_plan_entries').update({ title: trimmed, cook_id: cookId }).eq('id', entry.id)
+        ? await supabase.from('meal_plan_entries').update(fields).eq('id', entry.id)
         : await supabase.from('meal_plan_entries').insert({
+            ...fields,
             house_id: houseId,
             date: dateKey(date),
             slot,
-            title: trimmed,
-            cook_id: cookId,
             created_by: userId,
           });
       if (error) {
@@ -158,17 +197,47 @@ export function MealFormModal({
             label="Plato"
             placeholder={slot === 'lunch' ? 'Ej. Lentejas' : 'Ej. Tortilla de patatas'}
             value={title}
-            onChangeText={setTitle}
+            onChangeText={changeTitle}
             maxLength={MEAL_TITLE_MAX}
             autoFocus={!editing}
             returnKeyType="done"
             onSubmitEditing={save}
           />
 
+          {selectedRecipe ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -8 }}>
+              <BookOpen size={14} color={theme.colors.accent} />
+              <Text variant="caption" color="secondary" style={{ flex: 1 }} numberOfLines={2}>
+                {selectedRecipe.ingredients.length > 0
+                  ? `Del recetario · ${ingredientsSummary(selectedRecipe.ingredients)}`
+                  : 'Del recetario · sin ingredientes todavía'}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* del recetario */}
+          {recipeChips.length > 0 ? (
+            <View style={{ gap: 6 }}>
+              <Text variant="label" color="secondary">Del recetario</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {recipeChips.map((recipe) => (
+                    <Pressable key={recipe.id} onPress={() => pickRecipe(recipe)} accessibilityRole="button" accessibilityState={{ selected: recipe.id === recipeId }}>
+                      <View style={{ ...chip(recipe.id === recipeId), flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <BookOpen size={14} color={recipe.id === recipeId ? theme.colors.textInverse : theme.colors.textSecondary} />
+                        <Text variant="label" color={recipe.id === recipeId ? 'inverse' : 'secondary'}>{recipe.title}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          ) : null}
+
           {/* opciones rápidas */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {MEAL_SUGGESTIONS.map((suggestion) => (
-              <Pressable key={suggestion} onPress={() => setTitle(suggestion)} accessibilityRole="button">
+              <Pressable key={suggestion} onPress={() => changeTitle(suggestion)} accessibilityRole="button">
                 <View style={chip(title.trim() === suggestion)}>
                   <Text variant="label" color={title.trim() === suggestion ? 'inverse' : 'secondary'}>{suggestion}</Text>
                 </View>

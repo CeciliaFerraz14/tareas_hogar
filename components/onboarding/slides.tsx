@@ -415,6 +415,13 @@ function MenuStory({ active, reduced }: StoryProps) {
           ))}
         </View>
       ))}
+      <StoryToast
+        t={t}
+        frames={showBetween(2900, 4800, 'smooth')}
+        Icon={ShoppingCart}
+        text="5 ingredientes añadidos a la compra"
+        color={brand.lime300}
+      />
     </Stage>
   );
 }
@@ -727,7 +734,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'menu',
     title: '¿Qué comemos hoy?',
-    body: 'Planead juntos las comidas y cenas de la semana y apuntad quién cocina. En Inicio verás qué toca hoy en cada casa.',
+    body: 'Planead las comidas y cenas de la semana, apuntad quién cocina y guardad vuestras recetas. Sus ingredientes pasan a la compra con un toque.',
     Story: MenuStory,
   },
   {

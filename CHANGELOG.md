@@ -9,6 +9,22 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.13.0-beta] – 2026-09-30
+
+### Añadido
+- **Recetario** de cada hogar (botón «Recetas» en el menú): nombre,
+  ingredientes con su cantidad y notas. Se puede buscar por receta o por
+  ingrediente.
+- Al apuntar un plato en el menú se puede elegir del recetario. Si se escribe
+  a mano el nombre de una receta, se enlaza solo.
+- **Pasar ingredientes a la compra**: un botón en el menú añade a la lista los
+  ingredientes de los platos de hoy al domingo. Junta los repetidos
+  («Chorizo (1 + ½)») y no repite lo que ya está pendiente en la lista.
+
+### Cambiado
+- Si se renombra una receta, los platos del menú que la usan cambian con ella.
+  Si se borra, los platos se quedan, pero sin receta.
+
 ## [0.12.1-beta] – 2026-09-30
 
 ### Seguridad

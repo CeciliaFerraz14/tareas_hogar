@@ -364,6 +364,7 @@ export type Database = {
           date: string
           house_id: string
           id: string
+          recipe_id: string | null
           slot: string
           title: string
           updated_at: string
@@ -375,6 +376,7 @@ export type Database = {
           date: string
           house_id: string
           id?: string
+          recipe_id?: string | null
           slot: string
           title: string
           updated_at?: string
@@ -386,6 +388,7 @@ export type Database = {
           date?: string
           house_id?: string
           id?: string
+          recipe_id?: string | null
           slot?: string
           title?: string
           updated_at?: string
@@ -411,6 +414,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "houses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_recipe_same_house"
+            columns: ["recipe_id", "house_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id", "house_id"]
           },
         ]
       }
@@ -566,6 +576,93 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_ingredients: {
+        Row: {
+          house_id: string
+          id: string
+          name: string
+          position: number
+          quantity: string | null
+          recipe_id: string
+        }
+        Insert: {
+          house_id: string
+          id?: string
+          name: string
+          position?: number
+          quantity?: string | null
+          recipe_id: string
+        }
+        Update: {
+          house_id?: string
+          id?: string
+          name?: string
+          position?: number
+          quantity?: string | null
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_same_house"
+            columns: ["recipe_id", "house_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id", "house_id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          house_id: string
+          id: string
+          notes: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          house_id: string
+          id?: string
+          notes?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          house_id?: string
+          id?: string
+          notes?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
             referencedColumns: ["id"]
           },
         ]
@@ -836,6 +933,13 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      add_meals_to_shopping: {
+        Args: { p_from: string; p_house_id: string; p_to: string }
+        Returns: {
+          added: number
+          already_listed: number
+        }[]
+      }
       create_expense: {
         Args: {
           p_amount: number
@@ -877,6 +981,16 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: undefined
+      }
+      save_recipe: {
+        Args: {
+          p_house_id: string
+          p_ingredients: Json
+          p_notes?: string
+          p_recipe_id?: string
+          p_title: string
+        }
+        Returns: string
       }
       set_house_avatar: {
         Args: { p_avatar_url: string; p_house_id: string }
