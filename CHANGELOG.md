@@ -9,6 +9,17 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.14.0-beta] – 2026-09-30
+
+### Añadido
+- **¿Comes en casa?**: en cada comida y cena del menú, cada persona dice si
+  come en casa. En el menú se ve «3 comen · 1 no» y, al abrir el hueco, quién.
+- **Avisos a quien cocina**: cuando otra persona te apunta para cocinar, y un
+  recordatorio a las 10:00 del día que te toca con los platos y cuántos comen
+  («🍳 Hoy cocinas tú»). Se pueden apagar en Ajustes → Notificaciones → Menú.
+- **Copiar la semana anterior**: rellena los huecos vacíos con los platos de
+  la semana pasada, sin tocar lo que ya hay.
+
 ## [0.13.0-beta] – 2026-09-30
 
 ### Añadido

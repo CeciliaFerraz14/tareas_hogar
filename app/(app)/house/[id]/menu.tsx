@@ -17,6 +17,7 @@ import { DAY_NAMES, dateKey, parseDateKey, shortDate, weekDayOf } from '../../..
 import {
   MEAL_SLOTS,
   addDays,
+  attendanceSummary,
   isMealSlot,
   loadRecipes,
   mealKey,
@@ -24,6 +25,7 @@ import {
   weekDays,
   weekRangeLabel,
   weekTitle,
+  type Attendance,
   type MealEntry,
   type MealSlot,
   type Recipe,
@@ -42,6 +44,8 @@ export default function MenuScreen() {
   const [entries, setEntries] = useState<Map<string, MealEntry>>(new Map());
   const [members, setMembers] = useState<MealMember[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [attendance, setAttendance] = useState<Attendance>(new Map());
+  const [copyingWeek, setCopyingWeek] = useState(false);
   const [sendingToShopping, setSendingToShopping] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // El hueco abierto se guarda aparte de `formOpen` para que la hoja se cierre con su animación.
@@ -54,7 +58,7 @@ export default function MenuScreen() {
 
   const loadData = useCallback(async () => {
     if (!houseId) return;
-    const [entriesRes, membersRes, recipesList] = await Promise.all([
+    const [entriesRes, membersRes, recipesList, attendanceRes] = await Promise.all([
       supabase
         .from('meal_plan_entries')
         .select('id, date, slot, title, cook_id, recipe_id')
@@ -68,6 +72,12 @@ export default function MenuScreen() {
         .order('joined_at', { ascending: true }),
       // Sin recetario el menú sigue funcionando: solo faltan las sugerencias.
       loadRecipes(houseId).catch(() => null),
+      supabase
+        .from('meal_attendance')
+        .select('date, slot, user_id, eating')
+        .eq('house_id', houseId)
+        .gte('date', dateKey(monday))
+        .lte('date', dateKey(addDays(monday, 6))),
     ]);
     if (entriesRes.error) { Alert.alert('Error al cargar el menú', entriesRes.error.message); return; }
     const byKey = new Map<string, MealEntry>();
@@ -75,6 +85,16 @@ export default function MenuScreen() {
       if (isMealSlot(e.slot)) byKey.set(mealKey(e.date, e.slot), { ...e, slot: e.slot });
     }
     setEntries(byKey);
+    if (attendanceRes.data) {
+      const bySlot: Attendance = new Map();
+      for (const a of attendanceRes.data) {
+        if (!isMealSlot(a.slot)) continue;
+        const key = mealKey(a.date, a.slot);
+        if (!bySlot.has(key)) bySlot.set(key, new Map());
+        bySlot.get(key)?.set(a.user_id, a.eating);
+      }
+      setAttendance(bySlot);
+    }
     if (recipesList) setRecipes(recipesList);
     if (membersRes.data) {
       setMembers(
@@ -95,7 +115,7 @@ export default function MenuScreen() {
   // Realtime por Broadcast: si alguien cambia un plato o una receta, se ve al momento.
   useEffect(() => {
     if (!houseId) return;
-    return subscribeToHouseTables(houseId, ['meal_plan_entries', 'recipes'], () => { void loadData(); });
+    return subscribeToHouseTables(houseId, ['meal_plan_entries', 'recipes', 'meal_attendance'], () => { void loadData(); });
   }, [houseId, loadData]);
 
   const memberById = (id: string | null) => members.find((m) => m.user_id === id) ?? null;
@@ -120,6 +140,36 @@ export default function MenuScreen() {
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Añadir', onPress: () => void addToShopping() },
       ],
+    );
+  }
+
+  function confirmCopyWeek() {
+    Alert.alert(
+      'Copiar la semana anterior',
+      'Los platos de la semana anterior se copiarán en los huecos que estén vacíos. Lo que ya hay no se toca, y quién cocina se elige de nuevo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Copiar', onPress: () => void copyPreviousWeek() },
+      ],
+    );
+  }
+
+  async function copyPreviousWeek() {
+    if (!houseId) return;
+    setCopyingWeek(true);
+    const { data: copied, error } = await supabase.rpc('copy_meal_week', {
+      p_house_id: houseId,
+      p_from: dateKey(addDays(monday, -7)),
+      p_to: dateKey(monday),
+    });
+    setCopyingWeek(false);
+    if (error) { Alert.alert('No se pudo copiar la semana', error.message); return; }
+    void loadData();
+    Alert.alert(
+      copied ? '¡Semana copiada!' : 'Nada que copiar',
+      copied
+        ? `${copied === 1 ? 'Se ha copiado 1 plato' : `Se han copiado ${copied} platos`} de la semana anterior.`
+        : 'La semana anterior no tenía platos para los huecos que quedan libres.',
     );
   }
 
@@ -155,13 +205,14 @@ export default function MenuScreen() {
   function renderSlot(day: Date, slot: MealSlot, label: string) {
     const entry = entries.get(mealKey(day, slot)) ?? null;
     const cook = memberById(entry?.cook_id ?? null);
+    const answers = attendanceSummary(attendance.get(mealKey(day, slot)));
     const Icon = slot === 'lunch' ? Sun : Moon;
     return (
       <Pressable
         key={slot}
         onPress={() => { setOpenSlot({ date: day, slot, entry }); setFormOpen(true); }}
         accessibilityRole="button"
-        accessibilityLabel={entry ? `${label}: ${entry.title}` : `Añadir ${label.toLowerCase()}`}
+        accessibilityLabel={[entry ? `${label}: ${entry.title}` : `Añadir ${label.toLowerCase()}`, answers].filter(Boolean).join('. ')}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -174,19 +225,22 @@ export default function MenuScreen() {
       >
         <Icon size={18} color={slot === 'lunch' ? theme.colors.mustard : theme.colors.accent} strokeWidth={2.4} />
         <Text variant="caption" color="secondary" style={{ width: 58 }}>{label}</Text>
-        {entry ? (
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text variant="bodyBold" style={{ flexShrink: 1 }} numberOfLines={2}>{entry.title}</Text>
-            {entry.recipe_id ? (
-              <BookOpen size={14} color={theme.colors.textSecondary} accessibilityLabel="Del recetario" />
-            ) : null}
-          </View>
-        ) : (
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Plus size={14} color={theme.colors.textSecondary} />
-            <Text variant="caption" color="secondary">Añadir</Text>
-          </View>
-        )}
+        <View style={{ flex: 1, gap: 1 }}>
+          {entry ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text variant="bodyBold" style={{ flexShrink: 1 }} numberOfLines={2}>{entry.title}</Text>
+              {entry.recipe_id ? (
+                <BookOpen size={14} color={theme.colors.textSecondary} accessibilityLabel="Del recetario" />
+              ) : null}
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Plus size={14} color={theme.colors.textSecondary} />
+              <Text variant="caption" color="secondary">Añadir</Text>
+            </View>
+          )}
+          {answers ? <Text variant="caption" color="secondary">{answers}</Text> : null}
+        </View>
         {cook ? <Avatar uri={cook.avatar_url} name={cook.username ?? cook.email} size={28} /> : null}
       </Pressable>
     );
@@ -281,6 +335,17 @@ export default function MenuScreen() {
           );
         })}
 
+        {/* copiar la semana anterior (si queda algún hueco libre) */}
+        {!weekIsOver && planned < days.length * MEAL_SLOTS.length ? (
+          <Button
+            title="Copiar la semana anterior"
+            variant="secondary"
+            onPress={confirmCopyWeek}
+            loading={copyingWeek}
+            style={{ marginTop: theme.spacing.sm }}
+          />
+        ) : null}
+
         {/* pasar a la compra */}
         {weekIsOver ? null : (
           <View style={{ gap: 6, marginTop: theme.spacing.sm }}>
@@ -311,6 +376,7 @@ export default function MenuScreen() {
           userId={user.id}
           members={members}
           recipes={recipes}
+          attendance={attendance.get(mealKey(openSlot.date, openSlot.slot)) ?? new Map()}
           date={openSlot.date}
           slot={openSlot.slot}
           entry={openSlot.entry}

@@ -356,6 +356,48 @@ export type Database = {
           },
         ]
       }
+      meal_attendance: {
+        Row: {
+          date: string
+          eating: boolean
+          house_id: string
+          slot: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          date: string
+          eating: boolean
+          house_id: string
+          slot: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          date?: string
+          eating?: boolean
+          house_id?: string
+          slot?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_attendance_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_attendance_member"
+            columns: ["house_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "house_members"
+            referencedColumns: ["house_id", "user_id"]
+          },
+        ]
+      }
       meal_plan_entries: {
         Row: {
           cook_id: string | null
@@ -428,6 +470,7 @@ export type Database = {
         Row: {
           chat: boolean
           expenses: boolean
+          menu: boolean
           shopping: boolean
           tasks: boolean
           updated_at: string
@@ -436,6 +479,7 @@ export type Database = {
         Insert: {
           chat?: boolean
           expenses?: boolean
+          menu?: boolean
           shopping?: boolean
           tasks?: boolean
           updated_at?: string
@@ -444,6 +488,7 @@ export type Database = {
         Update: {
           chat?: boolean
           expenses?: boolean
+          menu?: boolean
           shopping?: boolean
           tasks?: boolean
           updated_at?: string
@@ -940,6 +985,10 @@ export type Database = {
           already_listed: number
         }[]
       }
+      copy_meal_week: {
+        Args: { p_from: string; p_house_id: string; p_to: string }
+        Returns: number
+      }
       create_expense: {
         Args: {
           p_amount: number
@@ -994,6 +1043,15 @@ export type Database = {
       }
       set_house_avatar: {
         Args: { p_avatar_url: string; p_house_id: string }
+        Returns: undefined
+      }
+      set_meal_attendance: {
+        Args: {
+          p_date: string
+          p_eating?: boolean
+          p_house_id: string
+          p_slot: string
+        }
         Returns: undefined
       }
     }
