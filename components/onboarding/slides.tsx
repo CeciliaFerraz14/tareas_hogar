@@ -752,7 +752,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'pets',
     title: 'Las mascotas también cuentan',
-    body: 'Registra las mascotas del piso y crea sus tareas (comida, paseos, medicación) para que a nadie se le olvide.',
+    body: 'Apunta sus rutinas (comida, paseos, arena…) y marca lo que haces: todo el piso sabrá si ya ha comido, y no comerá dos veces.',
     Story: PetsStory,
   },
   {

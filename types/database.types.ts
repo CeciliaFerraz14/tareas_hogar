@@ -504,6 +504,128 @@ export type Database = {
           },
         ]
       }
+      pet_logs: {
+        Row: {
+          done_at: string
+          done_by: string | null
+          for_date: string
+          house_id: string
+          id: string
+          routine_id: string
+          slot: number
+        }
+        Insert: {
+          done_at?: string
+          done_by?: string | null
+          for_date: string
+          house_id: string
+          id?: string
+          routine_id: string
+          slot?: number
+        }
+        Update: {
+          done_at?: string
+          done_by?: string | null
+          for_date?: string
+          house_id?: string
+          id?: string
+          routine_id?: string
+          slot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_logs_done_by_fkey"
+            columns: ["done_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_logs_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_logs_routine_same_house"
+            columns: ["routine_id", "house_id"]
+            isOneToOne: false
+            referencedRelation: "pet_routines"
+            referencedColumns: ["id", "house_id"]
+          },
+        ]
+      }
+      pet_routines: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          emoji: string
+          frequency: string
+          house_id: string
+          id: string
+          interval_days: number | null
+          month_day: number | null
+          pet_id: string
+          position: number
+          start_date: string
+          times: string[] | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          emoji?: string
+          frequency: string
+          house_id: string
+          id?: string
+          interval_days?: number | null
+          month_day?: number | null
+          pet_id: string
+          position?: number
+          start_date?: string
+          times?: string[] | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          emoji?: string
+          frequency?: string
+          house_id?: string
+          id?: string
+          interval_days?: number | null
+          month_day?: number | null
+          pet_id?: string
+          position?: number
+          start_date?: string
+          times?: string[] | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_routines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_routines_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_routines_pet_same_house"
+            columns: ["pet_id", "house_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id", "house_id"]
+          },
+        ]
+      }
       pet_tasks: {
         Row: {
           assigned_to: string | null

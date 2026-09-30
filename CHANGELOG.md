@@ -9,6 +9,23 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.16.0-beta] – 2026-09-30
+
+### Añadido
+- **Rutinas de las mascotas**: comida, paseos, arena, pastillas… a diario a
+  unas horas, cada X días o una vez al mes. Al crear una mascota se proponen
+  las de siempre según su tipo (perro, gato, conejo…).
+- **¿Ha comido ya?**: cada toma se marca con un toque y todo el piso ve al
+  momento quién lo hizo y cuándo («Última vez hace 2 h · Ana»). La misma toma
+  no se puede marcar dos veces, así nadie repite comida. Lo atrasado sale en
+  melocotón.
+- **Mascotas en Hoy**: lo que toca hoy y aún está sin hacer, marcable desde ahí.
+- Editar o borrar una mascota y sus rutinas.
+
+### Cambiado
+- Las tareas sueltas de antes pasan a ser **pendientes** de una sola vez
+  (veterinario, comprar pienso…).
+
 ## [0.15.2-beta] – 2026-09-30
 
 ### Cambiado

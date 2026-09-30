@@ -11,7 +11,10 @@ export type HouseBroadcastTable =
   | 'house_chat_reads'
   | 'meal_plan_entries'
   | 'recipes'
-  | 'meal_attendance';
+  | 'meal_attendance'
+  | 'pets'
+  | 'pet_routines'
+  | 'pet_logs';
 
 /** Lo que publica realtime.broadcast_changes en cada cambio. */
 export type HouseChange = {

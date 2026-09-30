@@ -9,6 +9,7 @@ import { HouseGate } from '../../../components/house/HouseGate';
 import { TabHeader } from '../../../components/house/HouseSwitcher';
 import { TodayTasks } from '../../../components/home/TodayTasks';
 import { TodayMeals } from '../../../components/home/TodayMeals';
+import { TodayPets } from '../../../components/home/TodayPets';
 import { NotificationsPrompt } from '../../../components/home/NotificationsPrompt';
 import { useHomeSummary } from '../../../hooks/useHomeSummary';
 import { useTabBarSpace } from '../../../hooks/useTabBarSpace';
@@ -71,6 +72,10 @@ function HoyScreen({ house }: { house: MyHouse }) {
           <Section title="Hoy se come">
             <TodayMeals houseId={house.id} userId={user.id} onOpenMenu={() => router.push(`/(app)/house/${house.id}/menu`)} />
           </Section>
+        ) : null}
+
+        {user ? (
+          <TodayPets houseId={house.id} userId={user.id} onOpenPets={() => router.push(`/(app)/house/${house.id}/mascotas`)} />
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
