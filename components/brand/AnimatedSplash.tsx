@@ -17,6 +17,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { HouseIllustration } from './HouseIllustration';
 import { WatercolorTape } from './WatercolorTape';
 import { brand } from '../../lib/theme';
+import { hideBootSplash } from '../../lib/bootSplash';
 import { Text } from '../ui/Text';
 
 const LETTERS = ['H', 'O', 'M', 'I'] as const;
@@ -68,6 +69,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   }
 
   useEffect(() => {
+    hideBootSplash();
     if (reducedMotion) {
       // Sin movimiento: todo en su sitio y un fundido corto.
       tape.value = 1;

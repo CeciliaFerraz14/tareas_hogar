@@ -9,6 +9,7 @@ import {
   Switch,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Alert } from '../../../lib/alert';
 import {
   Bell,
@@ -19,6 +20,7 @@ import {
   LogOut,
   MessageCircle,
   ShoppingCart,
+  Smartphone,
   Trash2,
   Wallet,
 } from 'lucide-react-native';
@@ -34,6 +36,7 @@ import { passwordResetRedirectUrl } from '../../../lib/authRedirect';
 import { requestNotificationPermission } from '../../../lib/notifications';
 import { versionLabel } from '../../../lib/appInfo';
 import { disableWebPush, enableWebPush, getWebPushState, type WebPushState } from '../../../lib/webPush';
+import { isInstalledPwa } from '../../../lib/pwaInstall';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../../lib/images';
 import { useTheme } from '../../../lib/theme';
 
@@ -51,6 +54,9 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const theme = useTheme();
+  const router = useRouter();
+  // Web en el navegador (no instalada): fila con la guía para instalarla.
+  const showInstall = Platform.OS === 'web' && !isInstalledPwa();
 
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -174,7 +180,11 @@ export default function SettingsScreen() {
       if (state === 'needs-install') {
         Alert.alert(
           'Instala HOMI primero',
-          'En iPhone las notificaciones solo funcionan con la app instalada: en Safari, pulsa Compartir → «Añadir a pantalla de inicio» y ábrela desde ahí.',
+          'En iPhone las notificaciones solo funcionan con la app instalada en la pantalla de inicio.',
+          [
+            { text: 'Ahora no', style: 'cancel' },
+            { text: 'Ver cómo', onPress: () => router.push('/instalar') },
+          ],
         );
       } else if (state === 'denied') {
         Alert.alert(
@@ -342,9 +352,29 @@ export default function SettingsScreen() {
           De momento los avisos llegan a la versión web instalada en la pantalla de inicio.
         </Text>
       ) : pushState === 'needs-install' ? (
-        <Text variant="caption" color="secondary" style={{ marginTop: -8, paddingHorizontal: 4 }}>
-          En iPhone, instala HOMI (Safari → Compartir → «Añadir a pantalla de inicio») para recibir avisos.
-        </Text>
+        <Pressable onPress={() => router.push('/instalar')} accessibilityRole="link" style={{ marginTop: -8, paddingHorizontal: 4 }}>
+          <Text variant="caption" color="secondary">
+            En iPhone, los avisos solo llegan con HOMI instalada.{' '}
+            <Text variant="caption" color="accent" style={{ textDecorationLine: 'underline' }}>Ver cómo instalarla</Text>
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {/* ── APP (solo en el navegador) ── */}
+      {showInstall ? (
+        <>
+          <SectionLabel>App</SectionLabel>
+          <Card style={{ padding: 0 }}>
+            <SettingsRow
+              Icon={Smartphone}
+              label="Instalar HOMI en el móvil"
+              right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
+              onPress={() => router.push('/instalar')}
+              first
+              last
+            />
+          </Card>
+        </>
       ) : null}
 
       {/* ── CUENTA ── */}

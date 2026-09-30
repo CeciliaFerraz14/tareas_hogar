@@ -9,6 +9,23 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.10.0-beta] – 2026-09-30
+
+### Añadido
+- Guía para instalar HOMI en el móvil en `/instalar` (iPhone, Android y
+  ordenador), con botón «Instalar» de un toque en Chrome/Android. Se abre desde
+  la bienvenida, desde Ajustes y desde el aviso de notificaciones del iPhone.
+- Pantalla de arranque con la casita mientras carga la web, y pantallas de
+  arranque propias al abrir la app instalada en iPhone.
+- Accesos directos a Tareas y Chat al mantener pulsado el icono (Android) y
+  capturas en la ventana de instalación.
+
+### Cambiado
+- En el ordenador, HOMI se ve en una columna centrada con el estilo de la marca
+  en vez de estirarse a todo el ancho.
+- La barra del navegador y la de estado usan el melocotón de la app (y el color
+  miel en modo oscuro) en vez del naranja fuerte.
+
 ## [0.9.0-beta] – 2026-09-28
 
 ### Añadido

@@ -7,7 +7,9 @@ module.exports = {
   // Por defecto Workbox ignora cualquier ruta con "node_modules", y Expo deja ahí
   // las fuentes (Quicksand, Fredoka) e imágenes: sin esto, sin conexión la app
   // abriría con la fuente del sistema.
-  globIgnores: ['sw.js', 'workbox-*.js', '**/*.map'],
+  // Tampoco las pantallas de arranque de iOS ni las capturas del manifest: solo
+  // se usan al instalar, y no tiene sentido que cada móvil se descargue todas.
+  globIgnores: ['sw.js', 'workbox-*.js', '**/*.map', 'icons/splash/**', 'screenshots/**'],
   swDest: 'dist/sw.js',
   // El bundle de JS pesa varios MB: por defecto Workbox solo guarda hasta 2 MB por fichero.
   maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,

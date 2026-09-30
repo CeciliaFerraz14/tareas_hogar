@@ -67,6 +67,30 @@ npm run icons:pwa     # regenera los iconos de public/icons (solo si cambia el l
 - Código solo web: `app/(app)/(tabs)/_layout.web.tsx` (barra de pestañas) y los `Platform.OS === 'web'` de `lib/`.
 - `lib/alert.ts`: usar siempre este `Alert` (en web el de react-native no muestra nada).
 
+- `public/icons/splash/`: pantallas de arranque de iOS (una por tamaño de iPhone, enlazadas en `index.html`). Las genera `npm run icons:pwa`.
+- `public/screenshots/`: capturas que Android enseña en la ventana de instalación.
+- `app/instalar.tsx` + `lib/pwaInstall.ts`: guía de instalación en `/instalar` (pública, se puede mandar el enlace).
+- En pantallas de más de 600 px la app va en una columna centrada (CSS en `index.html`); los `Modal` quedan dentro de ella.
+
+### Instalar HOMI en el móvil
+
+No hace falta ninguna tienda de apps: se instala desde el navegador. La guía con
+dibujos está en **`https://<tu-dominio>/instalar`** (también en la bienvenida y en Ajustes).
+
+**iPhone (Safari)**
+1. Abre la web de HOMI en **Safari** (desde WhatsApp o Instagram no se puede: ábrela antes en el navegador).
+2. Toca **Compartir** (el cuadrado con la flecha ↑; en iOS 26 está dentro del menú «···»).
+3. Elige **«Añadir a pantalla de inicio»**, deja activado **«Abrir como app web»** y pulsa **«Añadir»**.
+4. Abre HOMI desde su icono e inicia sesión (la app instalada no comparte la sesión con Safari).
+5. Para recibir avisos: Ajustes → Notificaciones. En iPhone solo funcionan con la app instalada.
+
+**Android (Chrome)**
+1. Abre la web de HOMI en Chrome.
+2. Pulsa **«Instalar HOMI»** en `/instalar`, o menú **⋮ → «Añadir a pantalla de inicio» → «Instalar»**.
+3. Ábrela desde su icono. (Samsung Internet: menú ≡ → «Añadir página a» → «Pantalla de inicio».)
+
+**Ordenador (Chrome / Edge)**: icono de instalar a la derecha de la barra de direcciones.
+
 ### Desplegar en Vercel
 
 1. Variables de entorno en Vercel (Project → Settings → Environment Variables):

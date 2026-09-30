@@ -3,8 +3,9 @@
 //
 //   node scripts/generate-pwa-icons.mjs
 //
-// Salida en public/icons/. Los PNG se suben a git: este script solo hace falta
-// si cambia el logo.
+// Salida en public/icons/ (y las pantallas de arranque de iOS en
+// public/icons/splash/). Los PNG se suben a git: este script solo hace falta si
+// cambia el logo.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -76,6 +77,48 @@ function badgeSvg() {
   </svg>`;
 }
 
+/**
+ * Pantalla de arranque de iOS (apple-touch-startup-image): el primer fotograma
+ * de la animación de inicio. Degradado vertical y la casita a 124 pt, un poco
+ * por encima del centro, igual que #homi-boot en public/index.html.
+ * @param width,height tamaño en píxeles reales; @param ratio píxeles por punto.
+ */
+function splashSvg(width, height, ratio) {
+  const houseWidth = 124 * ratio;
+  const scale = houseWidth / 120;
+  const x = (width - houseWidth) / 2;
+  const y = (height - 114 * scale) / 2 - 41 * ratio;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${GRADIENT[0]}"/>
+        <stop offset="0.35" stop-color="${GRADIENT[1]}"/>
+        <stop offset="0.7" stop-color="${GRADIENT[2]}"/>
+        <stop offset="1" stop-color="${GRADIENT[3]}"/>
+      </linearGradient>
+    </defs>
+    <rect width="${width}" height="${height}" fill="url(#bg)"/>
+    <g transform="translate(${x} ${y}) scale(${scale})">${HOUSE}</g>
+  </svg>`;
+}
+
+// iPhones en vertical: [ancho, alto] en puntos y píxeles por punto. Cada uno
+// tiene su <link rel="apple-touch-startup-image"> en public/index.html.
+const IPHONES = [
+  [440, 956, 3], // 16/17 Pro Max
+  [430, 932, 3], // 14 Pro Max, 15 Plus/Pro Max, 16 Plus
+  [428, 926, 3], // 12/13 Pro Max, 14 Plus
+  [420, 912, 3], // Air
+  [414, 896, 3], // XS Max, 11 Pro Max
+  [414, 896, 2], // XR, 11
+  [414, 736, 3], // 6/7/8 Plus
+  [402, 874, 3], // 16/17 Pro, 17
+  [393, 852, 3], // 14 Pro, 15, 15 Pro, 16
+  [390, 844, 3], // 12, 13, 14, 12/13 Pro
+  [375, 812, 3], // X, XS, 11 Pro, 12/13 mini
+  [375, 667, 2], // SE 2.ª/3.ª gen., 6/7/8
+];
+
 function png(svg, width) {
   return new Resvg(svg, { fitTo: { mode: 'width', value: width } }).render().asPng();
 }
@@ -94,6 +137,12 @@ const files = {
   'favicon-48.png': png(regular, 48),
   'badge-96.png': png(badgeSvg(), 96),
 };
+
+mkdirSync(new URL('splash/', OUT), { recursive: true });
+for (const [w, h, ratio] of IPHONES) {
+  const [width, height] = [w * ratio, h * ratio];
+  files[`splash/splash-${width}x${height}.png`] = png(splashSvg(width, height, ratio), width);
+}
 
 for (const [name, data] of Object.entries(files)) {
   writeFileSync(new URL(name, OUT), data);

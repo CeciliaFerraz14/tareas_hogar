@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { isInstalledPwa, isIos } from './pwaInstall';
 
 /**
  * Notificaciones push de la versión web (PWA), con Web Push + claves VAPID.
@@ -13,16 +14,6 @@ import { supabase } from './supabase';
 export type WebPushState = 'on' | 'off' | 'denied' | 'needs-install' | 'unsupported';
 
 const SW_READY_TIMEOUT_MS = 8000;
-
-function isIos(): boolean {
-  // Los iPad modernos se presentan como Mac con pantalla táctil.
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
-function isInstalledPwa(): boolean {
-  const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  return iosStandalone || window.matchMedia('(display-mode: standalone)').matches;
-}
 
 function hasWebPush(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;

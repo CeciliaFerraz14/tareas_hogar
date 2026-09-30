@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { Bell, Smartphone, X } from 'lucide-react-native';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -17,6 +18,7 @@ const DISMISSED_KEY = 'notif_prompt_dismissed';
  */
 export function NotificationsPrompt() {
   const theme = useTheme();
+  const router = useRouter();
   const [state, setState] = useState<WebPushState | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -75,7 +77,7 @@ export function NotificationsPrompt() {
           <Text variant="bodyBold">{needsInstall ? 'Instala HOMI para recibir avisos' : 'Entérate al momento'}</Text>
           <Text variant="caption" color="secondary">
             {needsInstall
-              ? 'En Safari, pulsa Compartir → «Añadir a pantalla de inicio» y abre HOMI desde ahí.'
+              ? 'En iPhone, los avisos solo llegan a la app instalada en la pantalla de inicio.'
               : 'Te avisamos cuando te escriban, te asignen una tarea o añadan algo a la compra.'}
           </Text>
         </View>
@@ -83,7 +85,11 @@ export function NotificationsPrompt() {
           <X size={18} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
-      {needsInstall ? null : <Button title="Activar notificaciones" loading={busy} onPress={() => void activate()} />}
+      {needsInstall ? (
+        <Button title="Ver cómo instalarla" onPress={() => router.push('/instalar')} />
+      ) : (
+        <Button title="Activar notificaciones" loading={busy} onPress={() => void activate()} />
+      )}
     </Card>
   );
 }

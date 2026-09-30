@@ -7,6 +7,13 @@
          deja el hueco leyendo env(safe-area-inset-*). -->
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
     <title>%WEB_TITLE%</title>
+    <meta name="description" content="Organiza tu piso compartido: tareas, compra, chat y gastos." />
+
+    <!-- Color de la barra del navegador / de estado: el mismo que la parte de arriba
+         de las pantallas, para que no se vea una franja de otro color.
+         Claro: melocotón del degradado. Oscuro: los tablones color miel. -->
+    <meta name="theme-color" content="#FCEFE6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#C49664" media="(prefers-color-scheme: dark)" />
 
     <!-- PWA: el "DNI" de la app (nombre, iconos, colores, pantalla completa). -->
     <link rel="manifest" href="/manifest.json" />
@@ -19,6 +26,22 @@
     <meta name="apple-mobile-web-app-title" content="HOMI" />
     <!-- "default": texto oscuro en la barra de estado, que se lee sobre el fondo claro. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- iOS: pantalla de arranque de la app instalada. Tampoco sale del manifest:
+         hay que dar una imagen del tamaño exacto de cada iPhone (si no, se ve en
+         blanco). Las genera `npm run icons:pwa` en public/icons/splash/. -->
+    <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1320x2868.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1290x2796.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1284x2778.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1260x2736.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1242x2688.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="/icons/splash/splash-828x1792.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1242x2208.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1206x2622.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1179x2556.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1170x2532.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/icons/splash/splash-1125x2436.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/icons/splash/splash-750x1334.png" />
 
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
@@ -41,7 +64,85 @@
         height: 100%;
         flex: 1;
       }
+
+      /* ── Pantallas anchas (ordenador, tablet) ──────────────────────────────
+         La app está pensada para el móvil: en vez de estirarse a todo el ancho,
+         va en una columna centrada con el estilo HOMI (borde de tinta y sombra
+         dura) y la acuarela naranja alrededor. En el móvil no cambia nada. */
+      @media (min-width: 600px) {
+        html {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(160deg, #fcefe6 0%, #f2b79a 40%, #ec8a5c 75%, #e46a36 100%) fixed;
+          /* Si el html no tiene overflow propio, el navegador le pasa el del body
+             y el body deja de recortar: el contenido se saldría por las esquinas. */
+          overflow: hidden;
+        }
+        body {
+          width: 440px;
+          height: calc(100% - 48px);
+          max-height: 940px;
+          margin: 0;
+          border: 2px solid #1a1410;
+          border-radius: 32px;
+          box-shadow: 8px 8px 0 0 #1a1410;
+          /* Truco: un `transform` convierte el body en la "caja" de los elementos
+             con position: fixed. Así las ventanas (Modal) y los menús se quedan
+             dentro de la columna en vez de ocupar toda la pantalla. */
+          transform: translateZ(0);
+        }
+      }
+
+      /* ── Pantalla de arranque ──────────────────────────────────────────────
+         Se ve mientras se descarga el JavaScript (varios MB la primera vez).
+         Es el primer fotograma de la animación de inicio (AnimatedSplash), que
+         la retira al empezar: así no hay pantalla vacía entre medias. */
+      #homi-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #fcefe6 0%, #f2b79a 35%, #ec8a5c 70%, #e46a36 100%);
+        transition: opacity 250ms ease-out;
+      }
+      #homi-boot.homi-boot--out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #homi-boot svg {
+        width: 124px;
+        height: 118px;
+        /* A la altura a la que queda la casita en la animación (encima de "HOMI"). */
+        transform: translateY(-41px);
+        animation: homi-breathe 1.6s ease-in-out infinite;
+      }
+      @keyframes homi-breathe {
+        50% { transform: translateY(-41px) scale(1.05); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #homi-boot svg { animation: none; }
+      }
     </style>
+
+    <script>
+      // Android / Chrome: el navegador avisa con `beforeinstallprompt` de que la
+      // app se puede instalar. Llega muy pronto (antes de que arranque React), así
+      // que se guarda aquí y la pantalla /instalar lo usa para su botón "Instalar"
+      // (ver lib/pwaInstall.ts).
+      window.__homiInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__homiInstallPrompt = event;
+        window.dispatchEvent(new Event('homi:installable'));
+      });
+      window.addEventListener('appinstalled', function () {
+        window.__homiInstallPrompt = null;
+        window.dispatchEvent(new Event('homi:installed'));
+      });
+    </script>
   </head>
 
   <body>
@@ -50,6 +151,29 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
+
+    <!-- Pantalla de arranque (ver #homi-boot arriba): la casita del logo. -->
+    <div id="homi-boot" aria-hidden="true">
+      <svg viewBox="0 0 120 114" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#1A1410" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="80" y="18" width="11" height="24" fill="#F7C4A5" />
+          <line x1="77" y1="18" x2="94" y2="18" />
+          <path d="M24 54 L24 104 L96 104 L96 54 L60 22 Z" fill="#FAD9C8" />
+          <path d="M12 60 L60 16 L108 60" fill="none" stroke-width="3.5" />
+          <path d="M18 58 L60 21 L102 58" fill="none" stroke-width="2" />
+          <path d="M60 52 C49 44 50 34 56 34.5 C58.5 34.7 60 37 60 38.5 C60 37 61.5 34.7 64 34.5 C70 34 71 44 60 52 Z" fill="#F7C4A5" stroke-width="2.5" />
+          <rect x="31" y="70" width="15" height="14" rx="1.5" fill="#FFF3EA" stroke-width="2.5" />
+          <line x1="38.5" y1="70" x2="38.5" y2="84" stroke-width="2" />
+          <line x1="31" y1="77" x2="46" y2="77" stroke-width="2" />
+          <rect x="74" y="70" width="15" height="14" rx="1.5" fill="#FFF3EA" stroke-width="2.5" />
+          <line x1="81.5" y1="70" x2="81.5" y2="84" stroke-width="2" />
+          <line x1="74" y1="77" x2="89" y2="77" stroke-width="2" />
+          <path d="M51 104 L51 80 Q60 68 69 80 L69 104" fill="#F4A98A" />
+          <line x1="16" y1="104" x2="104" y2="104" />
+        </g>
+        <circle cx="64.5" cy="92" r="1.6" fill="#1A1410" />
+      </svg>
+    </div>
 
     <!-- Service worker (generado con Workbox en `npm run build:web`): guarda la app
          en caché para que abra sin conexión. Con `expo start --web` no existe

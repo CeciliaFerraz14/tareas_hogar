@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,9 +8,12 @@ import { Text } from '../../components/ui/Text';
 import { HouseIllustration } from '../../components/brand/HouseIllustration';
 import { WatercolorTape } from '../../components/brand/WatercolorTape';
 import { brand } from '../../lib/theme';
+import { isInstalledPwa } from '../../lib/pwaInstall';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  // Web en el navegador (no instalada): enlace a la guía para instalarla.
+  const showInstall = Platform.OS === 'web' && !isInstalledPwa();
 
   return (
     <LinearGradient
@@ -43,6 +46,18 @@ export default function WelcomeScreen() {
               variant="secondary"
               onPress={() => router.push('/(auth)/register')}
             />
+            {showInstall ? (
+              <Pressable
+                onPress={() => router.push('/instalar')}
+                accessibilityRole="link"
+                hitSlop={8}
+                style={{ alignSelf: 'center' }}
+              >
+                <Text variant="label" style={{ color: brand.ink, textDecorationLine: 'underline' }}>
+                  ¿Cómo la instalo en el móvil?
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </SafeAreaView>

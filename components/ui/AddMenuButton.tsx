@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -17,6 +17,19 @@ const MENU_WIDTH = 280;
 const CLOSE_MS = 180;
 
 type Frame = { x: number; y: number; width: number; height: number };
+
+/**
+ * Web en pantalla ancha: la app va en una columna centrada (el body, ver
+ * public/index.html) y los Modal se colocan respecto a ella, pero
+ * measureInWindow mide respecto a la ventana. Se pasa a coordenadas de la
+ * columna. En el móvil la columna es la ventana y no cambia nada.
+ */
+function toAppFrame(frame: Frame): Frame {
+  if (Platform.OS !== 'web') return frame;
+  const { body } = document;
+  const rect = body.getBoundingClientRect();
+  return { ...frame, x: frame.x - rect.left - body.clientLeft, y: frame.y - rect.top - body.clientTop };
+}
 
 // Sin rebote: la tarjeta crece un poco desde la burbuja con una deceleración suave.
 const menuEntering: EntryExitAnimationFunction = () => {
@@ -48,14 +61,15 @@ const menuExiting: EntryExitAnimationFunction = () => {
  */
 export function AddMenuButton({ actions, accessibilityLabel }: AddMenuButtonProps) {
   const theme = useTheme();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
+  const screenWidth = Platform.OS === 'web' ? document.body.clientWidth : windowWidth;
   const buttonRef = useRef<View>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
   const [menuShown, setMenuShown] = useState(false);
 
   function open() {
     buttonRef.current?.measureInWindow((x, y, width, height) => {
-      setFrame({ x, y, width, height });
+      setFrame(toAppFrame({ x, y, width, height }));
       setMenuShown(true);
     });
   }
