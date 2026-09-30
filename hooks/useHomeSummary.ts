@@ -37,7 +37,7 @@ function displayName(u: { username: string | null; email: string } | null): stri
 }
 
 /**
- * Datos de Inicio: mi nombre, los miembros y el resumen de cada hogar (tareas de
+ * Datos de Hoy: mi nombre, los miembros y el resumen de cada hogar (tareas de
  * hoy, compra, mensajes sin leer y menú de hoy) y "Para hoy": las tareas de hoy que son mías o
  * de nadie, de todos mis hogares. Se mantiene al día en tiempo real.
  */

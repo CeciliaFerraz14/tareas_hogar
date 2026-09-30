@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Alert } from '../../../lib/alert';
+import { Alert } from '../../lib/alert';
 import {
+  ArrowLeft,
   Bell,
   Camera,
   CheckSquare,
@@ -26,22 +27,22 @@ import {
   UtensilsCrossed,
   Wallet,
 } from 'lucide-react-native';
-import { Screen } from '../../../components/ui/Screen';
-import { Text } from '../../../components/ui/Text';
-import { Card } from '../../../components/ui/Card';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
-import { Avatar } from '../../../components/ui/Avatar';
-import { useAuthStore } from '../../../store/authStore';
-import { useOnboardingStore } from '../../../store/onboardingStore';
-import { supabase } from '../../../lib/supabase';
-import { passwordResetRedirectUrl } from '../../../lib/authRedirect';
-import { requestNotificationPermission } from '../../../lib/notifications';
-import { versionLabel } from '../../../lib/appInfo';
-import { disableWebPush, enableWebPush, getWebPushState, type WebPushState } from '../../../lib/webPush';
-import { isInstalledPwa } from '../../../lib/pwaInstall';
-import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../../lib/images';
-import { useTheme } from '../../../lib/theme';
+import { Screen } from '../../components/ui/Screen';
+import { Text } from '../../components/ui/Text';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Avatar } from '../../components/ui/Avatar';
+import { useAuthStore } from '../../store/authStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
+import { supabase } from '../../lib/supabase';
+import { passwordResetRedirectUrl } from '../../lib/authRedirect';
+import { requestNotificationPermission } from '../../lib/notifications';
+import { versionLabel } from '../../lib/appInfo';
+import { disableWebPush, enableWebPush, getWebPushState, type WebPushState } from '../../lib/webPush';
+import { isInstalledPwa } from '../../lib/pwaInstall';
+import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../lib/images';
+import { useTheme } from '../../lib/theme';
 
 /** De qué avisar. Se guarda en notification_prefs: lo lee la Edge Function send-push. */
 type NotifCategories = { tasks: boolean; chat: boolean; expenses: boolean; shopping: boolean; menu: boolean };
@@ -273,7 +274,10 @@ export default function SettingsScreen() {
 
   return (
     <Screen scroll>
-      <View style={{ gap: 4, marginTop: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 }}>
+        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
+          <ArrowLeft size={24} color={theme.colors.textPrimary} />
+        </Pressable>
         <Text variant="title">Ajustes</Text>
       </View>
 

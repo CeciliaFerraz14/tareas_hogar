@@ -17,6 +17,11 @@ type ComposerBarProps = {
   /** Varias líneas (chat). En una línea, Intro envía y el teclado sigue abierto. */
   multiline?: boolean;
   maxLength: number;
+  /**
+   * En una pestaña: lo que ocupa la barra de pestañas (useTabBarSpace). La caja
+   * se queda encima de la barra y, con el teclado abierto, pegada a él.
+   */
+  bottomSpace?: number;
 };
 
 /**
@@ -33,6 +38,7 @@ export function ComposerBar({
   accessibilityLabel,
   multiline = false,
   maxLength,
+  bottomSpace,
 }: ComposerBarProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -52,9 +58,11 @@ export function ComposerBar({
         // Con el teclado cerrado, deja sitio a la barra de inicio del iPhone. En Android
         // ese hueco ya lo deja <Screen>.
         paddingBottom:
-          keyboardVisible || Platform.OS === 'android'
-            ? theme.spacing.sm
-            : Math.max(insets.bottom, theme.spacing.md),
+          bottomSpace !== undefined
+            ? (keyboardVisible ? theme.spacing.sm : Math.max(bottomSpace, theme.spacing.sm))
+            : keyboardVisible || Platform.OS === 'android'
+              ? theme.spacing.sm
+              : Math.max(insets.bottom, theme.spacing.md),
       }}
     >
       <View

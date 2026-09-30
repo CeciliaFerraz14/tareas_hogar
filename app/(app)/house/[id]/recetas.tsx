@@ -12,12 +12,14 @@ import { RecipeFormModal } from '../../../../components/menu/RecipeFormModal';
 import { subscribeToHouseTables } from '../../../../lib/realtime';
 import { useTheme } from '../../../../lib/theme';
 import { ingredientsSummary, loadRecipes, normalizeTitle, type Recipe } from '../../../../lib/meals';
+import { useSyncActiveHouse } from '../../../../store/houseStore';
 
 /** Con más recetas que esto aparece el buscador. */
 const SEARCH_FROM = 6;
 
 export default function RecetasScreen() {
   const { id: houseId } = useLocalSearchParams<{ id: string }>();
+  useSyncActiveHouse(houseId);
   const router = useRouter();
   const theme = useTheme();
 

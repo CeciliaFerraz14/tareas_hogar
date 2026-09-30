@@ -20,6 +20,7 @@ import { Avatar } from '../../../../components/ui/Avatar';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../lib/supabase';
 import { useTheme } from '../../../../lib/theme';
+import { useSyncActiveHouse } from '../../../../store/houseStore';
 
 const PET_TYPES = [
   { value: 'perro', label: 'Perro', emoji: '🐶' },
@@ -60,6 +61,7 @@ function formatDate(iso: string) {
 
 export default function MascotasScreen() {
   const { id: houseId } = useLocalSearchParams<{ id: string }>();
+  useSyncActiveHouse(houseId);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const theme = useTheme();

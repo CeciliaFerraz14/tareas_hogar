@@ -13,7 +13,7 @@ import { enableWebPush, getWebPushState, type WebPushState } from '../../lib/web
 const DISMISSED_KEY = 'notif_prompt_dismissed';
 
 /**
- * Tarjeta de Inicio (solo web) que invita a activar las notificaciones, o a
+ * Tarjeta de Hoy (solo web) que invita a activar las notificaciones, o a
  * instalar la app en el iPhone, que es lo que hace falta para recibirlas.
  */
 export function NotificationsPrompt() {

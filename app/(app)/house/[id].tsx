@@ -5,20 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   Camera,
-  CheckSquare,
-  ChevronRight,
-  MessageCircle,
   MoreVertical,
-  PawPrint,
   Pencil,
-  ShoppingCart,
-  Star,
   Trash2,
   UserMinus,
   UserPlus,
   Users,
-  UtensilsCrossed,
-  Wallet,
 } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
@@ -31,7 +23,7 @@ import { supabase } from '../../../lib/supabase';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../../lib/images';
 import { useTheme } from '../../../lib/theme';
 import { useAuthStore } from '../../../store/authStore';
-import { useHouseStore } from '../../../store/houseStore';
+import { useHouseStore, useSyncActiveHouse } from '../../../store/houseStore';
 
 type House = { id: string; name: string; avatar_url: string | null };
 
@@ -46,21 +38,14 @@ type Member = {
   } | null;
 };
 
-const MODULES = [
-  { key: 'tareas', label: 'Tareas', Icon: CheckSquare, ready: true },
-  { key: 'compra', label: 'Lista de compra', Icon: ShoppingCart, ready: true },
-  { key: 'menu', label: 'Menú semanal', Icon: UtensilsCrossed, ready: true },
-  { key: 'chat', label: 'Chat', Icon: MessageCircle, ready: true },
-  { key: 'hucha', label: 'Hucha', Icon: Wallet, ready: true },
-  { key: 'mascotas', label: 'Mascotas', Icon: PawPrint, ready: true },
-] as const;
-
 export default function HouseDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useTheme();
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const { primaryHouseId, setPrimaryHouse, forgetHouse } = useHouseStore();
+  const forgetHouse = useHouseStore((s) => s.forgetHouse);
+  const loadHouses = useHouseStore((s) => s.loadHouses);
+  useSyncActiveHouse(id);
 
   const [house, setHouse] = useState<House | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -259,6 +244,7 @@ export default function HouseDetail() {
     const { error } = await supabase.from('houses').delete().eq('id', id);
     if (error) { Alert.alert('No se pudo eliminar el hogar', error.message); return; }
     forgetHouse(id);
+    void loadHouses();
     router.replace('/(app)/(tabs)');
   }
 
@@ -277,7 +263,7 @@ export default function HouseDetail() {
           <ArrowLeft size={24} color={theme.colors.textPrimary} />
         </Pressable>
         <Text variant="caption" color="secondary" style={{ flex: 1, marginLeft: 8 }}>
-          Hogar
+          Ajustes del hogar
         </Text>
         <Pressable
           onPress={() => setMenuOpen(true)}
@@ -354,43 +340,6 @@ export default function HouseDetail() {
         </Card>
       </View>
 
-      <View style={{ gap: 8 }}>
-        <Text variant="label" color="secondary">
-          Módulos
-        </Text>
-        {MODULES.map(({ key, label, Icon, ready }) => (
-          <Pressable
-            key={key}
-            onPress={() =>
-              ready
-                ? router.push(`/(app)/house/${id}/${key}`)
-                : Alert.alert('Próximamente', `${label} llegará en la siguiente fase.`)
-            }
-          >
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: theme.colors.primaryMuted,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon size={20} color={theme.colors.primary} />
-                </View>
-                <Text variant="bodyBold" style={{ flex: 1 }}>
-                  {label}
-                </Text>
-                <ChevronRight size={20} color={theme.colors.textSecondary} />
-              </View>
-            </Card>
-          </Pressable>
-        ))}
-      </View>
-
       {/* ── 3-dot menu modal ── */}
       <Modal
         visible={menuOpen}
@@ -429,22 +378,6 @@ export default function HouseDetail() {
               {house?.name ?? 'Hogar'}
             </Text>
 
-            <MenuOption
-              icon={
-                <Star
-                  size={20}
-                  color={primaryHouseId === id ? theme.colors.primary : theme.colors.textPrimary}
-                  fill={primaryHouseId === id ? theme.colors.primary : 'transparent'}
-                />
-              }
-              label={primaryHouseId === id ? 'Quitar hogar principal' : 'Marcar como principal'}
-              labelColor={primaryHouseId === id ? theme.colors.primary : undefined}
-              onPress={() => {
-                setPrimaryHouse(primaryHouseId === id ? null : id ?? null);
-                setMenuOpen(false);
-              }}
-              theme={theme}
-            />
             <MenuOption
               icon={<Camera size={20} color={theme.colors.textPrimary} />}
               label="Cambiar foto"

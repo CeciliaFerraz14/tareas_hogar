@@ -20,6 +20,7 @@ import { Avatar } from '../../../../components/ui/Avatar';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../lib/supabase';
 import { useTheme } from '../../../../lib/theme';
+import { useSyncActiveHouse } from '../../../../store/houseStore';
 
 type Member = {
   user_id: string;
@@ -58,6 +59,7 @@ function formatDate(iso: string) {
 
 export default function HuchaScreen() {
   const { id: houseId } = useLocalSearchParams<{ id: string }>();
+  useSyncActiveHouse(houseId);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const theme = useTheme();

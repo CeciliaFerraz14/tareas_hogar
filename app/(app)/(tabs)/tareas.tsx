@@ -10,7 +10,10 @@ import { PlusButton } from '../../../components/ui/PlusButton';
 import { TaskCalendar } from '../../../components/tasks/TaskCalendar';
 import { TaskFormModal } from '../../../components/tasks/TaskFormModal';
 import { useAuthStore } from '../../../store/authStore';
-import { useHouseStore } from '../../../store/houseStore';
+import { useActiveHouse, type MyHouse } from '../../../store/houseStore';
+import { HouseGate } from '../../../components/house/HouseGate';
+import { TabHeader } from '../../../components/house/HouseSwitcher';
+import { useTabBarSpace } from '../../../hooks/useTabBarSpace';
 import { supabase } from '../../../lib/supabase';
 import { subscribeToHouseTables } from '../../../lib/realtime';
 import { useTheme } from '../../../lib/theme';
@@ -43,10 +46,18 @@ type Task = {
   assigned_to: string | null;
 };
 
-export default function TareasScreen() {
+export default function TareasTab() {
+  const active = useActiveHouse();
+  if (active.status !== 'ready') return <HouseGate state={active} />;
+  // key: al cambiar de hogar, la pantalla empieza de cero.
+  return <TareasScreen key={active.house.id} house={active.house} />;
+}
+
+function TareasScreen({ house }: { house: MyHouse }) {
   const user = useAuthStore((s) => s.user);
-  const houseId = useHouseStore((s) => s.currentHouseId);
+  const houseId = house.id;
   const theme = useTheme();
+  const bottomSpace = useTabBarSpace();
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -151,28 +162,13 @@ export default function TareasScreen() {
     return rooms.find((r) => r.id === id) ?? null;
   }
 
-  if (!houseId) {
-    return (
-      <Screen>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <Text variant="heading">Sin hogar activo</Text>
-          <Text variant="body" color="secondary">
-            Ve a Inicio y entra en uno de tus hogares.
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
-
   // Un único margen lateral para cabecera, calendario y tareas.
   const gutter = theme.spacing.md;
 
   return (
-    <Screen contentStyle={{ padding: 0, gap: 0 }}>
-      {/* header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: theme.spacing.md, paddingHorizontal: gutter }}>
-        <Text variant="title" style={{ flex: 1 }}>Tareas</Text>
-        <PlusButton onPress={openCreate} accessibilityLabel="Nueva tarea" />
+    <Screen contentStyle={{ padding: 0, gap: 0 }} bottomEdge={false}>
+      <View style={{ paddingHorizontal: gutter, marginBottom: theme.spacing.md }}>
+        <TabHeader house={house} title="Tareas" right={<PlusButton onPress={openCreate} accessibilityLabel="Nueva tarea" />} />
       </View>
 
       {/* calendario fijo: solo las tareas hacen scroll */}
@@ -187,7 +183,7 @@ export default function TareasScreen() {
       {/* task list */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: 4, paddingBottom: theme.spacing.lg, gap: 10 }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: 4, paddingBottom: bottomSpace + theme.spacing.lg, gap: 10 }}
         showsVerticalScrollIndicator={false}
       >
 
@@ -265,7 +261,7 @@ export default function TareasScreen() {
       </ScrollView>
 
 
-      {houseId && user ? (
+      {user ? (
         <TaskFormModal
           visible={formOpen}
           onClose={() => setFormOpen(false)}

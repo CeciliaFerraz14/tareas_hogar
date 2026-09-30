@@ -172,7 +172,7 @@ function HousesStory({ active, reduced }: StoryProps) {
   );
 }
 
-// ── 3. Inicio: "Para hoy" ───────────────────────────────────────────────────
+// ── 3. Hoy ──────────────────────────────────────────────────────────────────
 
 function Counter({ Icon, n }: { Icon: typeof CheckSquare; n: number }) {
   return (
@@ -710,13 +710,13 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'houses',
     title: 'Tu hogar y tu gente',
-    body: 'Crea un hogar o únete a uno con un código de invitación. Puedes estar en varios y ordenarlos arrastrando.',
+    body: 'Crea un hogar o únete a uno con un código de invitación. Si estás en varios, cambia de uno a otro tocando su nombre arriba.',
     Story: HousesStory,
   },
   {
     key: 'today',
     title: 'Tu día, de un vistazo',
-    body: 'En Inicio tienes tus tareas de hoy de todos tus hogares y un resumen de cada casa: tareas, compra, mensajes sin leer y qué se come.',
+    body: 'En Hoy tienes el día de tu hogar: tus tareas, qué se come (y si comes en casa), la compra y los mensajes nuevos.',
     Story: TodayStory,
   },
   {
@@ -758,7 +758,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'ready',
     title: '¡Todo listo!',
-    body: 'Activa las notificaciones en Ajustes para enterarte de todo. Este tutorial también está ahí, por si quieres volver a verlo.',
+    body: 'Activa las notificaciones en Más → Tu cuenta y ajustes para enterarte de todo. Este tutorial también está en Más, por si quieres volver a verlo.',
     Story: ReadyStory,
   },
 ];

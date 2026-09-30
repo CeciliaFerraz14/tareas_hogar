@@ -30,11 +30,13 @@ import {
   type MealSlot,
   type Recipe,
 } from '../../../../lib/meals';
+import { useSyncActiveHouse } from '../../../../store/houseStore';
 
 type OpenSlot = { date: Date; slot: MealSlot; entry: MealEntry | null };
 
 export default function MenuScreen() {
   const { id: houseId } = useLocalSearchParams<{ id: string }>();
+  useSyncActiveHouse(houseId);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const theme = useTheme();

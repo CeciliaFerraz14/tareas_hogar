@@ -21,9 +21,14 @@ type ScreenProps = {
   refreshing?: boolean;
   /** false si la pantalla gestiona el teclado por su cuenta (p. ej. el chat). */
   avoidKeyboard?: boolean;
+  /**
+   * false en las pestañas con barra flotante: el hueco de abajo lo deja cada
+   * pantalla con useTabBarSpace (la barra ya cuenta el área segura).
+   */
+  bottomEdge?: boolean;
 };
 
-export function Screen({ children, scroll = false, style, contentStyle, onRefresh, refreshing, avoidKeyboard = true }: ScreenProps) {
+export function Screen({ children, scroll = false, style, contentStyle, onRefresh, refreshing, avoidKeyboard = true, bottomEdge = true }: ScreenProps) {
   const theme = useTheme();
   const content = (
     <View
@@ -45,7 +50,7 @@ export function Screen({ children, scroll = false, style, contentStyle, onRefres
     {theme.isDark && <WoodPlanks />}
     {/* Abajo: en iOS lo gestionan la barra de cristal y cada lista; en Android, la
         barra de navegación del sistema (en las pestañas este margen queda en 0). */}
-    <SafeAreaView style={[{ flex: 1 }, style]} edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['top']}>
+    <SafeAreaView style={[{ flex: 1 }, style]} edges={Platform.OS === 'android' && bottomEdge ? ['top', 'bottom'] : ['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

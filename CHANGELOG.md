@@ -9,6 +9,28 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.15.0-beta] – 2026-09-30
+
+### Cambiado
+- **La app gira alrededor de tu hogar**: arriba se ve siempre el hogar activo
+  y se toca para cambiar a otro, crear uno o unirse con un código. Si solo
+  tienes uno, se elige solo; si tienes varios, se pregunta la primera vez.
+- **Nuevas pestañas: Hoy · Tareas · Compra · Chat · Más**, todas del hogar
+  activo. La compra y el chat quedan a un toque.
+- **Barra de pestañas flotante** (web y Android): una píldora con el estilo
+  HOMI en la que la pestaña activa se estira y enseña su nombre. Se aparta al
+  escribir. En iPhone sigue la barra de cristal de iOS.
+- **Hoy**: tus tareas del día, qué se come (y si comes en casa, que se contesta
+  ahí mismo), lo que falta en la compra y los mensajes nuevos.
+- **Más**: un tablero con Menú, Recetas, Hucha (lo que debes o te deben),
+  Mascotas y Miembros, y el acceso a tu cuenta y al tutorial.
+- Los ajustes de la cuenta están ahora en Más → Tu cuenta y ajustes.
+- Accesos directos del icono de la app: Tareas, Compra y Chat.
+
+### Quitado
+- La lista de hogares ordenable de Inicio y el «hogar principal»: los
+  sustituye el hogar activo.
+
 ## [0.14.0-beta] – 2026-09-30
 
 ### Añadido

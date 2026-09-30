@@ -13,7 +13,7 @@ type OnboardingState = {
   checkedFor: string | null;
   /** Al entrar: lo abre si este usuario todavía no lo ha visto. */
   checkFirstTime: (userId: string) => Promise<void>;
-  /** Desde Ajustes → «Ver tutorial». */
+  /** Desde Más → «Cómo funciona HOMI» y Ajustes → «Ver tutorial». */
   open: () => void;
   /** Al terminarlo o saltarlo: no vuelve a salir solo. */
   finish: (userId: string) => void;
