@@ -9,6 +9,16 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.12.0-beta] – 2026-09-30
+
+### Añadido
+- **Menú semanal** en cada hogar: comida y cena de cada día, con quién cocina.
+  Se pasa de semana con las flechas y los cambios se ven al momento en los
+  móviles de todos. Opciones rápidas: «Sobras», «Pedimos fuera» y «Cada uno lo
+  suyo».
+- En Inicio, cada hogar enseña qué se come hoy; al tocarlo se abre el menú.
+- Diapositiva nueva en el tutorial: «¿Qué comemos hoy?».
+
 ## [0.11.0-beta] – 2026-09-30
 
 ### Añadido

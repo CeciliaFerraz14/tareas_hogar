@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
-import { CheckSquare, GripVertical, MessageCircle, ShoppingCart, Star } from 'lucide-react-native';
+import { CheckSquare, GripVertical, MessageCircle, Moon, ShoppingCart, Star, Sun, UtensilsCrossed } from 'lucide-react-native';
 import { Avatar } from '../ui/Avatar';
 import { Card } from '../ui/Card';
 import { HouseAvatar } from '../ui/HouseAvatar';
@@ -10,7 +10,7 @@ import { Text } from '../ui/Text';
 import { useTheme } from '../../lib/theme';
 import type { HomeMember, HouseSummary } from '../../hooks/useHomeSummary';
 
-export type HouseSection = 'tareas' | 'compra' | 'chat';
+export type HouseSection = 'tareas' | 'compra' | 'chat' | 'menu';
 
 const MAX_FACES = 4;
 
@@ -30,7 +30,8 @@ type HouseCardProps = {
 
 /**
  * Tarjeta de un hogar en Inicio: foto, nombre, caras de los miembros y
- * contadores (tareas de hoy, compra, mensajes nuevos) que llevan a su sección.
+ * contadores (tareas de hoy, compra, mensajes nuevos) y el menú de hoy, que
+ * llevan a su sección.
  * Va dentro de la lista reordenable: mantener pulsado la coge para moverla.
  */
 export function HouseCard({
@@ -103,6 +104,12 @@ export function HouseCard({
             <GripVertical size={20} color={theme.colors.textSecondary} />
           </View>
 
+          <TodayMenu
+            lunch={summary?.lunchToday ?? null}
+            dinner={summary?.dinnerToday ?? null}
+            onPress={() => onOpenSection('menu')}
+          />
+
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <SectionChip
               icon={<CheckSquare size={15} color={theme.colors.textOnFill} />}
@@ -159,6 +166,49 @@ function MemberFaces({ members }: { members: HomeMember[] }) {
         {members.length} {members.length === 1 ? 'miembro' : 'miembros'}
       </Text>
     </View>
+  );
+}
+
+/** Lo que se come hoy en el hogar. Lleva al menú semanal. */
+function TodayMenu({ lunch, dinner, onPress }: { lunch: string | null; dinner: string | null; onPress: () => void }) {
+  const theme = useTheme();
+  const meals = [
+    { key: 'lunch', Icon: Sun, color: theme.colors.mustard, title: lunch },
+    { key: 'dinner', Icon: Moon, color: theme.colors.accent, title: dinner },
+  ].filter((m) => m.title !== null);
+  const label = meals.length === 0
+    ? 'Menú de hoy sin planear'
+    : `Hoy se come: ${[lunch && `comida, ${lunch}`, dinner && `cena, ${dinner}`].filter(Boolean).join('; ')}`;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={4}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: theme.radii.md,
+        backgroundColor: pressed ? theme.colors.surfaceAlt : theme.colors.background,
+      })}
+    >
+      <UtensilsCrossed size={16} color={theme.colors.textSecondary} />
+      {meals.length === 0 ? (
+        <Text variant="caption" color="secondary" style={{ flex: 1 }}>Menú de hoy sin planear</Text>
+      ) : (
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {meals.map(({ key, Icon, color, title }) => (
+            <View key={key} style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon size={14} color={color} strokeWidth={2.4} />
+              <Text variant="label" numberOfLines={1} style={{ flexShrink: 1 }}>{title}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </Pressable>
   );
 }
 

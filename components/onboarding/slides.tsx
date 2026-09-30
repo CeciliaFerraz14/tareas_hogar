@@ -8,10 +8,12 @@ import {
   CheckSquare,
   Home,
   MessageCircle,
+  Moon,
   PawPrint,
   Plus,
   Share2,
   ShoppingCart,
+  Sun,
   Wallet,
 } from 'lucide-react-native';
 import { brand } from '../../lib/theme';
@@ -369,7 +371,55 @@ function ShoppingStory({ active, reduced }: StoryProps) {
   );
 }
 
-// ── 6. Chat ─────────────────────────────────────────────────────────────────
+// ── 6. Menú semanal ─────────────────────────────────────────────────────────
+
+const MENU_DAYS = [
+  {
+    day: 'Hoy',
+    meals: [
+      { Icon: Sun, title: 'Lentejas', face: ANA, at: 250 },
+      { Icon: Moon, title: 'Tortilla de patatas', face: LEO, at: 450 },
+    ],
+  },
+  {
+    day: 'Mañana',
+    meals: [
+      { Icon: Sun, title: 'Pasta al pesto', face: YO, at: 1300 },
+      { Icon: Moon, title: 'Pedimos fuera 🍕', face: null, at: 2100 },
+    ],
+  },
+] as const;
+
+function MenuStory({ active, reduced }: StoryProps) {
+  const t = useStoryClock(active, reduced, 5600, 3200);
+  const out = 5100;
+  return (
+    <Stage style={{ gap: 6 }}>
+      {MENU_DAYS.map(({ day, meals }, i) => (
+        <View key={day} style={{ gap: 6 }}>
+          <Appear t={t} frames={showBetween(i === 0 ? 50 : 1100, out, 'smooth')} from="fade">
+            <Text variant="caption" style={{ color: brand.sand600, fontFamily: 'Quicksand_700Bold', marginTop: i === 0 ? 0 : 4 }}>
+              {day}
+            </Text>
+          </Appear>
+          {meals.map(({ Icon, title, face, at }) => (
+            <Appear key={title} t={t} frames={showBetween(at, out)} from={face ? 'left' : 'below'}>
+              <MiniRow style={{ paddingVertical: 6 }}>
+                <Icon size={17} color={ink} strokeWidth={2.4} />
+                <Text variant="label" style={{ flex: 1, color: ink }} numberOfLines={1}>
+                  {title}
+                </Text>
+                {face ? <Face {...face} size={24} /> : null}
+              </MiniRow>
+            </Appear>
+          ))}
+        </View>
+      ))}
+    </Stage>
+  );
+}
+
+// ── 7. Chat ─────────────────────────────────────────────────────────────────
 
 function Bubble({ text, mine = false, children }: { text: string; mine?: boolean; children?: ReactNode }) {
   return (
@@ -436,7 +486,7 @@ function ChatStory({ active, reduced }: StoryProps) {
   );
 }
 
-// ── 7. Hucha ────────────────────────────────────────────────────────────────
+// ── 8. Hucha ────────────────────────────────────────────────────────────────
 
 const PRESS: Frame[] = [[0, 1], [2750, 1], [2850, 0.9], [2980, 1]];
 
@@ -530,7 +580,7 @@ function PiggyStory({ active, reduced }: StoryProps) {
   );
 }
 
-// ── 8. Mascotas ─────────────────────────────────────────────────────────────
+// ── 9. Mascotas ─────────────────────────────────────────────────────────────
 
 const PAWS = [
   { left: '8%', top: '86%' },
@@ -600,7 +650,7 @@ function PetsStory({ active, reduced }: StoryProps) {
   );
 }
 
-// ── 9. Final: avisos ────────────────────────────────────────────────────────
+// ── 10. Final: avisos ───────────────────────────────────────────────────────
 
 const RING: Frame[] = [
   [0, 0], [400, 0], [500, 16], [600, -16], [700, 12], [800, -10], [900, 6], [1000, 0],
@@ -647,7 +697,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'welcome',
     title: 'Te damos la bienvenida a HOMI',
-    body: 'Organizar un piso compartido sin dramas: tareas, compra, chat, gastos y mascotas, todo en un mismo sitio.',
+    body: 'Organizar un piso compartido sin dramas: tareas, compra, menú, chat, gastos y mascotas, todo en un mismo sitio.',
     Story: WelcomeStory,
   },
   {
@@ -659,7 +709,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'today',
     title: 'Tu día, de un vistazo',
-    body: 'En Inicio tienes tus tareas de hoy de todos tus hogares y un resumen de cada casa: tareas, compra y mensajes sin leer.',
+    body: 'En Inicio tienes tus tareas de hoy de todos tus hogares y un resumen de cada casa: tareas, compra, mensajes sin leer y qué se come.',
     Story: TodayStory,
   },
   {
@@ -673,6 +723,12 @@ export const SLIDES: readonly Slide[] = [
     title: 'La compra, compartida',
     body: 'Todos veis la misma lista al momento. Tacha lo que compras y los demás sabrán cuándo empiezas y cuándo has terminado.',
     Story: ShoppingStory,
+  },
+  {
+    key: 'menu',
+    title: '¿Qué comemos hoy?',
+    body: 'Planead juntos las comidas y cenas de la semana y apuntad quién cocina. En Inicio verás qué toca hoy en cada casa.',
+    Story: MenuStory,
   },
   {
     key: 'chat',

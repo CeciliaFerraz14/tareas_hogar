@@ -14,6 +14,9 @@ export type HouseSummary = {
   tasksTodayPending: number;
   shoppingPending: number;
   unreadMessages: number;
+  /** Plato de hoy de cada hueco del menú (null si no hay nada apuntado). */
+  lunchToday: string | null;
+  dinnerToday: string | null;
 };
 
 export type TodayTask = {
@@ -35,7 +38,7 @@ function displayName(u: { username: string | null; email: string } | null): stri
 
 /**
  * Datos de Inicio: mi nombre, los miembros y el resumen de cada hogar (tareas de
- * hoy, compra y mensajes sin leer) y "Para hoy": las tareas de hoy que son mías o
+ * hoy, compra, mensajes sin leer y menú de hoy) y "Para hoy": las tareas de hoy que son mías o
  * de nadie, de todos mis hogares. Se mantiene al día en tiempo real.
  */
 export function useHomeSummary(userId: string | undefined, houseIds: string[]) {
@@ -83,6 +86,8 @@ export function useHomeSummary(userId: string | undefined, houseIds: string[]) {
           tasksTodayPending: s.tasks_today_pending,
           shoppingPending: s.shopping_pending,
           unreadMessages: s.unread_messages,
+          lunchToday: s.lunch_today ?? null,
+          dinnerToday: s.dinner_today ?? null,
         };
       }
       setSummaryByHouse(byHouse);
@@ -115,7 +120,7 @@ export function useHomeSummary(userId: string | undefined, houseIds: string[]) {
     const offs = houseKey.split(',').map((id) =>
       subscribeToHouseTables(
         id,
-        ['tasks', 'task_completions', 'shopping_items', 'house_messages', 'house_chat_reads'],
+        ['tasks', 'task_completions', 'shopping_items', 'house_messages', 'house_chat_reads', 'meal_plan_entries'],
         reloadSoon,
       ),
     );

@@ -17,6 +17,7 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  UtensilsCrossed,
   Wallet,
 } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
@@ -48,6 +49,7 @@ type Member = {
 const MODULES = [
   { key: 'tareas', label: 'Tareas', Icon: CheckSquare, ready: true },
   { key: 'compra', label: 'Lista de compra', Icon: ShoppingCart, ready: true },
+  { key: 'menu', label: 'Menú semanal', Icon: UtensilsCrossed, ready: true },
   { key: 'chat', label: 'Chat', Icon: MessageCircle, ready: true },
   { key: 'hucha', label: 'Hucha', Icon: Wallet, ready: true },
   { key: 'mascotas', label: 'Mascotas', Icon: PawPrint, ready: true },

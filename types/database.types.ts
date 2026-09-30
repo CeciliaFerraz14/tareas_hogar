@@ -356,6 +356,64 @@ export type Database = {
           },
         ]
       }
+      meal_plan_entries: {
+        Row: {
+          cook_id: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          house_id: string
+          id: string
+          slot: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cook_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          house_id: string
+          id?: string
+          slot: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cook_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          house_id?: string
+          id?: string
+          slot?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_cook_is_member"
+            columns: ["house_id", "cook_id"]
+            isOneToOne: false
+            referencedRelation: "house_members"
+            referencedColumns: ["house_id", "user_id"]
+          },
+          {
+            foreignKeyName: "meal_plan_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_entries_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_prefs: {
         Row: {
           chat: boolean
@@ -799,7 +857,9 @@ export type Database = {
       my_house_summaries: {
         Args: { p_today: string }
         Returns: {
+          dinner_today: string
           house_id: string
+          lunch_today: string
           shopping_pending: number
           tasks_today_pending: number
           unread_messages: number
