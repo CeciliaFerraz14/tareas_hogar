@@ -21,6 +21,7 @@ import {
   MessageCircle,
   ShoppingCart,
   Smartphone,
+  Sparkles,
   Trash2,
   Wallet,
 } from 'lucide-react-native';
@@ -31,6 +32,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Avatar } from '../../../components/ui/Avatar';
 import { useAuthStore } from '../../../store/authStore';
+import { useOnboardingStore } from '../../../store/onboardingStore';
 import { supabase } from '../../../lib/supabase';
 import { passwordResetRedirectUrl } from '../../../lib/authRedirect';
 import { requestNotificationPermission } from '../../../lib/notifications';
@@ -53,6 +55,7 @@ function nativeNotifKey(userId: string) {
 export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const openTutorial = useOnboardingStore((s) => s.open);
   const theme = useTheme();
   const router = useRouter();
   // Web en el navegador (no instalada): fila con la guía para instalarla.
@@ -360,22 +363,27 @@ export default function SettingsScreen() {
         </Pressable>
       ) : null}
 
-      {/* ── APP (solo en el navegador) ── */}
-      {showInstall ? (
-        <>
-          <SectionLabel>App</SectionLabel>
-          <Card style={{ padding: 0 }}>
-            <SettingsRow
-              Icon={Smartphone}
-              label="Instalar HOMI en el móvil"
-              right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
-              onPress={() => router.push('/instalar')}
-              first
-              last
-            />
-          </Card>
-        </>
-      ) : null}
+      {/* ── AYUDA ── */}
+      <SectionLabel>Ayuda</SectionLabel>
+      <Card style={{ padding: 0 }}>
+        {showInstall ? (
+          <SettingsRow
+            Icon={Smartphone}
+            label="Instalar HOMI en el móvil"
+            right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
+            onPress={() => router.push('/instalar')}
+            first
+          />
+        ) : null}
+        <SettingsRow
+          Icon={Sparkles}
+          label="Ver tutorial de HOMI"
+          right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
+          onPress={openTutorial}
+          first={!showInstall}
+          last
+        />
+      </Card>
 
       {/* ── CUENTA ── */}
       <SectionLabel>Cuenta</SectionLabel>

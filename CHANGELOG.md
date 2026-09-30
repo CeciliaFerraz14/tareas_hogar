@@ -9,6 +9,16 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.11.0-beta] – 2026-09-30
+
+### Añadido
+- Tutorial animado «Cómo funciona HOMI» (9 pasos: hogares, Inicio, tareas,
+  compra, chat, hucha, mascotas y avisos). Sale la primera vez que entra cada
+  usuario y se puede volver a ver en Ajustes → «Ver tutorial de HOMI».
+
+### Cambiado
+- En Ajustes, «Instalar HOMI» y «Ver tutorial» están juntos en una sección «Ayuda».
+
 ## [0.10.0-beta] – 2026-09-30
 
 ### Añadido
