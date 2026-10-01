@@ -7,7 +7,8 @@ import { Text } from '../ui/Text';
 import { SectionTitle } from '../ui/Labels';
 import { subscribeToHouseTables } from '../../lib/realtime';
 import { useTheme } from '../../lib/theme';
-import { currentOccurrences, loadPetBoard, markDone, petEmoji, type Occurrence, type Pet, type PetLog, type PetRoutine } from '../../lib/pets';
+import { currentOccurrences, loadPetBoard, markDone, type Occurrence, type Pet, type PetLog, type PetRoutine } from '../../lib/pets';
+import { PetAvatar } from '../pets/PetAvatar';
 
 type TodayPetsProps = {
   houseId: string;
@@ -108,7 +109,7 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
                 >
                   <Check size={14} color={theme.colors.border} strokeWidth={3} />
                 </View>
-                <Text style={{ fontSize: 18, lineHeight: 24 }}>{petEmoji(pet?.type ?? null)}</Text>
+                <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} />
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyBold" numberOfLines={1}>{`${occ.routine.emoji} ${occ.routine.title}`}</Text>
                   <Text variant="caption" color="secondary">{pet?.name}</Text>

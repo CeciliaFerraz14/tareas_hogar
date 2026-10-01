@@ -26,7 +26,7 @@ export function petEmoji(type: string | null): string {
 
 export type PetFrequency = 'daily' | 'interval' | 'monthly';
 
-export type Pet = { id: string; name: string; type: string | null };
+export type Pet = { id: string; name: string; type: string | null; photo_url: string | null };
 
 export type PetRoutine = {
   id: string;
@@ -216,7 +216,7 @@ const LOG_DAYS = 92;
 export async function loadPetBoard(houseId: string) {
   const since = dateKey(addDays(new Date(), -LOG_DAYS));
   const [petsRes, routinesRes, logsRes] = await Promise.all([
-    supabase.from('pets').select('id, name, type').eq('house_id', houseId).order('name'),
+    supabase.from('pets').select('id, name, type, photo_url').eq('house_id', houseId).order('name'),
     supabase
       .from('pet_routines')
       .select('id, pet_id, title, emoji, frequency, times, interval_days, month_day, start_date, position')
@@ -237,6 +237,10 @@ export async function loadPetBoard(houseId: string) {
   }));
   return { pets: (petsRes.data ?? []) as Pet[], routines, logs: (logsRes.data ?? []) as PetLog[] };
 }
+
+/** Bucket y ruta de la foto de una mascota: pet-photos/<house_id>/<pet_id>.jpg. */
+export const PET_PHOTOS_BUCKET = 'pet-photos';
+export const petPhotoPath = (houseId: string, petId: string) => `${houseId}/${petId}.jpg`;
 
 /** Marca una toma como hecha por mí. Si otra persona se ha adelantado, lo dice. */
 export async function markDone(houseId: string, occ: Occurrence, userId: string) {

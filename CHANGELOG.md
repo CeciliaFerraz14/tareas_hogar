@@ -9,6 +9,13 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.17.0-beta] – 2026-10-01
+
+### Añadido
+- **Fotos de las mascotas**: al crear o editar una mascota se le puede poner
+  una foto (de la galería o de la cámara) o quitarla. Se ve en su tarjeta y en
+  la sección Mascotas de Hoy; sin foto, sale el emoji de su tipo.
+
 ## [0.16.2-beta] – 2026-10-01
 
 ### Quitado

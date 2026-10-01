@@ -11,6 +11,7 @@ import { Input } from '../../../../components/ui/Input';
 import { PlusButton } from '../../../../components/ui/PlusButton';
 import { PetFormModal } from '../../../../components/pets/PetFormModal';
 import { RoutineFormModal } from '../../../../components/pets/RoutineFormModal';
+import { PetAvatar } from '../../../../components/pets/PetAvatar';
 import { useAuthStore } from '../../../../store/authStore';
 import { useSyncActiveHouse } from '../../../../store/houseStore';
 import { supabase } from '../../../../lib/supabase';
@@ -24,7 +25,6 @@ import {
   loadPetBoard,
   markDone,
   nextDate,
-  petEmoji,
   scheduleLabel,
   type Occurrence,
   type Pet,
@@ -254,21 +254,9 @@ function PetCard({ pet, routines, logs, tasks, now, nameOf, onToggle, onEditPet,
   return (
     <Card padded={false} style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: theme.spacing.md }}>
-        <View
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 26,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: theme.borderWidth,
-            borderColor: theme.colors.outline,
-            backgroundColor: theme.colors.mustard,
-            ...theme.shadows.small,
-          }}
-        >
-          <Text style={{ fontSize: 28, lineHeight: 34 }}>{petEmoji(pet.type)}</Text>
-        </View>
+        <Pressable onPress={onEditPet} accessibilityRole="button" accessibilityLabel={pet.photo_url ? `Foto de ${pet.name}` : `Añadir foto a ${pet.name}`} style={{ borderRadius: 30, ...theme.shadows.small }}>
+          <PetAvatar photoUrl={pet.photo_url} type={pet.type} size={56} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text variant="heading">{pet.name}</Text>
           <Text variant="caption" color="secondary">

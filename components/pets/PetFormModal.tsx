@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
-import { Check, Trash2 } from 'lucide-react-native';
+import { Camera, Check, Trash2 } from 'lucide-react-native';
+import type { ImagePickerAsset } from 'expo-image-picker';
 import { Alert } from '../../lib/alert';
 import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { supabase } from '../../lib/supabase';
+import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../lib/images';
+import { PetAvatar } from './PetAvatar';
 import { useTheme } from '../../lib/theme';
 import { dateKey } from '../../lib/tasks';
 import {
+  PET_PHOTOS_BUCKET,
   PET_TYPES,
+  petPhotoPath,
   routineRows,
   scheduleLabel,
   suggestedRoutines,
@@ -41,6 +46,9 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
   const [type, setType] = useState<PetTypeValue>('perro');
   // Índices de las rutinas sugeridas que se crearán (todas marcadas al principio).
   const [picked, setPicked] = useState<Set<number>>(new Set());
+  // Foto elegida (se sube al guardar) o petición de quitar la que tiene.
+  const [photoAsset, setPhotoAsset] = useState<ImagePickerAsset | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const suggestions = suggestedRoutines(type);
@@ -51,7 +59,35 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
     const initialType = isPetType(pet?.type ?? null) ? (pet?.type as PetTypeValue) : 'perro';
     setType(initialType);
     setPicked(new Set(suggestedRoutines(initialType).map((_, i) => i)));
+    setPhotoAsset(null);
+    setRemovePhoto(false);
   }, [visible]);
+
+  const photoPreview = photoAsset?.uri ?? (removePhoto ? null : (pet?.photo_url ?? null));
+
+  async function pickPhoto(source: ImageSource) {
+    const asset = await pickSquareImage(source);
+    if (!asset) return;
+    setPhotoAsset(asset);
+    setRemovePhoto(false);
+  }
+
+  /** Sube la foto elegida y la guarda en la mascota. Devuelve el error, si lo hay. */
+  async function savePhoto(petId: string): Promise<string | null> {
+    if (photoAsset) {
+      const { url, error } = await uploadPublicImage(PET_PHOTOS_BUCKET, petPhotoPath(houseId, petId), photoAsset);
+      if (error || !url) return error ?? 'No se pudo subir la foto.';
+      const { error: updateError } = await supabase.from('pets').update({ photo_url: url }).eq('id', petId);
+      return updateError?.message ?? null;
+    }
+    if (removePhoto && pet?.photo_url) {
+      const { error } = await supabase.from('pets').update({ photo_url: null }).eq('id', petId);
+      if (error) return error.message;
+      // El fichero sobra; si no se puede borrar, no pasa nada (se pisará con la próxima foto).
+      void supabase.storage.from(PET_PHOTOS_BUCKET).remove([petPhotoPath(houseId, petId)]).then(() => undefined);
+    }
+    return null;
+  }
 
   function chooseType(next: PetTypeValue) {
     setType(next);
@@ -72,9 +108,11 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
     if (!trimmed) { Alert.alert('Falta el nombre', '¿Cómo se llama?'); return; }
     setSaving(true);
     try {
+      let petId: string;
       if (pet) {
         const { error } = await supabase.from('pets').update({ name: trimmed, type }).eq('id', pet.id);
         if (error) { Alert.alert('No se pudo guardar', error.message); return; }
+        petId = pet.id;
       } else {
         const { data, error } = await supabase.from('pets').insert({ house_id: houseId, name: trimmed, type }).select('id').single();
         if (error || !data) { Alert.alert('No se pudo guardar la mascota', error?.message ?? ''); return; }
@@ -85,7 +123,10 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
             .insert(routineRows(houseId, data.id, userId, drafts, dateKey(new Date())));
           if (routinesError) Alert.alert('La mascota está, pero faltan rutinas', routinesError.message);
         }
+        petId = data.id;
       }
+      const photoError = await savePhoto(petId);
+      if (photoError) Alert.alert('La mascota está guardada, pero la foto no', photoError);
       onClose();
       onSaved();
     } finally {
@@ -103,6 +144,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
         onPress: async () => {
           const { error } = await supabase.from('pets').delete().eq('id', pet.id);
           if (error) { Alert.alert('No se pudo borrar', error.message); return; }
+          if (pet.photo_url) void supabase.storage.from(PET_PHOTOS_BUCKET).remove([petPhotoPath(houseId, pet.id)]).then(() => undefined);
           onClose();
           onSaved();
         },
@@ -128,6 +170,41 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
                 <Trash2 size={22} color={theme.colors.danger} />
               </Pressable>
             ) : null}
+          </View>
+
+          {/* foto */}
+          <View style={{ alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={() => chooseImageSource(`Foto de ${name.trim() || 'tu mascota'}`, (source) => void pickPhoto(source))}
+              accessibilityRole="button"
+              accessibilityLabel={photoPreview ? 'Cambiar la foto' : 'Añadir una foto'}
+            >
+              <PetAvatar photoUrl={photoPreview} type={type} size={96} />
+              <View
+                style={{
+                  position: 'absolute',
+                  right: -2,
+                  bottom: -2,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: theme.borderWidth,
+                  borderColor: theme.colors.outline,
+                  backgroundColor: theme.colors.peach,
+                }}
+              >
+                <Camera size={16} color={theme.colors.textOnFill} />
+              </View>
+            </Pressable>
+            {photoPreview ? (
+              <Pressable onPress={() => { setPhotoAsset(null); setRemovePhoto(true); }} accessibilityRole="button" hitSlop={6}>
+                <Text variant="label" color="accent">Quitar foto</Text>
+              </Pressable>
+            ) : (
+              <Text variant="caption" color="secondary">Toca para añadir una foto</Text>
+            )}
           </View>
 
           <Input label="Nombre" placeholder="Ej. Luna, Mochi…" value={name} onChangeText={setName} autoFocus={!editing} maxLength={40} />
