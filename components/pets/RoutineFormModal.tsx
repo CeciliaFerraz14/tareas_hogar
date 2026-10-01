@@ -320,6 +320,7 @@ export function RoutineFormModal({ visible, onClose, onSaved, houseId, userId, p
                 value={remind}
                 onValueChange={setRemind}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor="#fff"
                 accessibilityLabel="Avisar cuando toque"
               />
             </View>

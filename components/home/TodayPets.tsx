@@ -111,7 +111,7 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
                 >
                   <Check size={14} color={theme.colors.border} strokeWidth={3} />
                 </View>
-                {occ.routine.pet_id ? <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} /> : <PackAvatar pets={pets} size={30} />}
+                {occ.routine.pet_id ? <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} /> : <PackAvatar pets={pets.filter((p) => p.in_pack)} size={30} />}
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyBold" numberOfLines={1}>{`${occ.routine.emoji} ${occ.routine.title}`}</Text>
                   <Text variant="caption" color="secondary">{who}</Text>

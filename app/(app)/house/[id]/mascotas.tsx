@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Bell, Check, Circle, CheckCircle2, MoreHorizontal, Plus } from 'lucide-react-native';
+import { ArrowLeft, Bell, Check, ChevronDown, ChevronUp, Circle, CheckCircle2, MoreHorizontal, Plus } from 'lucide-react-native';
 import { Alert } from '../../../../lib/alert';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
@@ -61,6 +61,8 @@ export default function MascotasScreen() {
   const [petForm, setPetForm] = useState<{ open: boolean; pet: Pet | null }>({ open: false, pet: null });
   const [routineForm, setRoutineForm] = useState<{ open: boolean; target: PetTarget; routine: PetRoutine | null }>({ open: false, target: null, routine: null });
   const [itemForm, setItemForm] = useState<{ open: boolean; kind: PetItemKind; target: PetTarget; item: PetItem | null }>({ open: false, kind: 'todo', target: null, item: null });
+  // Mascotas de la manada desplegadas.
+  const [openPets, setOpenPets] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!houseId) return;
@@ -154,12 +156,19 @@ export default function MascotasScreen() {
     if (error) { Alert.alert('No se pudo actualizar', error.message); void loadData(); }
   }
 
-  // La manada sale con dos mascotas o más (o si ya tiene cosas suyas).
+  // La manada: las mascotas que forman parte de ella, si son dos o más (o si ya
+  // tiene cosas suyas). Las demás van por su cuenta, con su propia tarjeta.
+  const packPets = pets.filter((p) => p.in_pack);
   const packRoutines = routines.filter((r) => r.pet_id === null);
   const packItems = items.filter((i) => i.pet_id === null);
-  const showPack = pets.length >= 2 || packRoutines.length > 0 || packItems.length > 0;
+  const showPack = packPets.length >= 2 || packRoutines.length > 0 || packItems.length > 0;
+  const loosePets = showPack ? pets.filter((p) => !p.in_pack) : pets;
 
-  const groupProps = (target: PetTarget, who: string) => ({
+  const ownerLabel = (pet: Pet) => (pet.owner_id ? (pet.owner_id === user?.id ? 'Tuya' : `De ${nameOf(pet.owner_id)}`) : 'Del piso');
+
+  const bodyProps = (target: PetTarget, who: string) => ({
+    routines: routines.filter((r) => r.pet_id === target),
+    items: items.filter((i) => i.pet_id === target),
     logs,
     now,
     nameOf,
@@ -170,6 +179,15 @@ export default function MascotasScreen() {
     onEditItem: (item: PetItem) => setItemForm({ open: true, kind: item.kind, target, item }),
     onToggleItem: (item: PetItem) => void toggleItem(item),
   });
+
+  function toggleOpen(petId: string) {
+    setOpenPets((prev) => {
+      const next = new Set(prev);
+      if (next.has(petId)) next.delete(petId);
+      else next.add(petId);
+      return next;
+    });
+  }
 
   return (
     <Screen contentStyle={{ padding: 0, gap: 0 }}>
@@ -200,34 +218,46 @@ export default function MascotasScreen() {
         ) : (
           <>
             {showPack ? (
-              <GroupCard
-                avatar={<PackAvatar pets={pets} size={56} />}
-                title="La manada"
-                subtitle={`Lo de ${pets.length === 2 ? `${pets[0].name} y ${pets[1].name}` : 'todas'}: areneros, pienso…`}
-                routines={packRoutines}
-                items={packItems}
-                {...groupProps(null, 'la manada')}
-              />
+              <Card padded={false} style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
+                <GroupHeader
+                  avatar={<PackAvatar pets={packPets} size={56} />}
+                  title="La manada"
+                  subtitle={packPets.length > 0 ? andNames(packPets.map((p) => p.name)) : undefined}
+                  status={pendingLabel(packRoutines, logs, now)}
+                />
+                {packPets.map((pet) => (
+                  <PetFold
+                    key={pet.id}
+                    pet={pet}
+                    owner={ownerLabel(pet)}
+                    open={openPets.has(pet.id)}
+                    onToggleOpen={() => toggleOpen(pet.id)}
+                    onEdit={() => setPetForm({ open: true, pet })}
+                    {...bodyProps(pet.id, pet.name)}
+                  />
+                ))}
+                <Text variant="label" color="secondary" style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.sm }}>
+                  De toda la manada
+                </Text>
+                <GroupBody {...bodyProps(null, 'la manada')} />
+              </Card>
             ) : null}
-            {pets.map((pet) => {
-              const owner = pet.owner_id ? (pet.owner_id === user?.id ? 'Tuya' : `De ${nameOf(pet.owner_id)}`) : 'Del piso';
-              return (
-                <GroupCard
-                  key={pet.id}
+            {loosePets.map((pet) => (
+              <Card key={pet.id} padded={false} style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
+                <GroupHeader
                   avatar={(
                     <Pressable onPress={() => setPetForm({ open: true, pet })} accessibilityRole="button" accessibilityLabel={pet.photo_url ? `Foto de ${pet.name}` : `Añadir foto a ${pet.name}`} style={{ borderRadius: 30, ...theme.shadows.small }}>
                       <PetAvatar photoUrl={pet.photo_url} type={pet.type} size={56} />
                     </Pressable>
                   )}
                   title={pet.name}
-                  owner={owner}
+                  owner={ownerLabel(pet)}
+                  status={pendingLabel(routines.filter((r) => r.pet_id === pet.id), logs, now)}
                   onEdit={() => setPetForm({ open: true, pet })}
-                  routines={routines.filter((r) => r.pet_id === pet.id)}
-                  items={items.filter((i) => i.pet_id === pet.id)}
-                  {...groupProps(pet.id, pet.name)}
                 />
-              );
-            })}
+                <GroupBody {...bodyProps(pet.id, pet.name)} />
+              </Card>
+            ))}
           </>
         )}
       </ScrollView>
@@ -241,6 +271,7 @@ export default function MascotasScreen() {
             houseId={houseId}
             userId={user.id}
             members={members}
+            otherPets={pets.filter((p) => p.id !== petForm.pet?.id).length}
             pet={petForm.pet}
           />
           <RoutineFormModal
@@ -271,13 +302,60 @@ export default function MascotasScreen() {
   );
 }
 
-type GroupCardProps = {
+const andNames = (names: string[]) =>
+  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
+
+/** 'Todo al día' · '1 cosa por hacer' · '3 cosas por hacer' (lo que toca ya y no está hecho). */
+function pendingLabel(routines: PetRoutine[], logs: PetLog[], now: Date): string {
+  const pending = routines
+    .flatMap((r) => currentOccurrences(r, logs, now))
+    .filter((o) => !o.log && (o.late || o.routine.frequency !== 'daily')).length;
+  return pending === 0 ? 'Todo al día' : pending === 1 ? '1 cosa por hacer' : `${pending} cosas por hacer`;
+}
+
+/** 'Tuya' · 'De Ana' · 'Del piso'. */
+function OwnerBadge({ label }: { label: string }) {
+  const theme = useTheme();
+  return (
+    <View style={{ paddingHorizontal: 8, paddingVertical: 1, borderRadius: theme.radii.pill, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }}>
+      <Text variant="caption" color="secondary">{label}</Text>
+    </View>
+  );
+}
+
+type GroupHeaderProps = {
   avatar: ReactNode;
   title: string;
-  /** 'Tuya' · 'De Ana' · 'Del piso' (solo las mascotas). */
+  /** Solo las mascotas. */
   owner?: string;
   subtitle?: string;
+  status: string;
   onEdit?: () => void;
+};
+
+function GroupHeader({ avatar, title, owner, subtitle, status, onEdit }: GroupHeaderProps) {
+  const theme = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: theme.spacing.md }}>
+      {avatar}
+      <View style={{ flex: 1 }}>
+        <Text variant="heading">{title}</Text>
+        {subtitle ? <Text variant="caption" color="secondary">{subtitle}</Text> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {owner ? <OwnerBadge label={owner} /> : null}
+          <Text variant="caption" color="secondary">{status}</Text>
+        </View>
+      </View>
+      {onEdit ? (
+        <Pressable onPress={onEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Editar ${title}`}>
+          <MoreHorizontal size={22} color={theme.colors.textSecondary} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+type GroupBodyProps = {
   routines: PetRoutine[];
   items: PetItem[];
   logs: PetLog[];
@@ -291,40 +369,11 @@ type GroupCardProps = {
   onToggleItem: (item: PetItem) => void;
 };
 
-/** Tarjeta de una mascota o de la manada: rutinas, compra, pendientes y notas. */
-function GroupCard({
-  avatar, title, owner, subtitle, onEdit, routines, items, logs, now, nameOf,
-  onToggle, onAddRoutine, onEditRoutine, onAddItem, onEditItem, onToggleItem,
-}: GroupCardProps) {
+/** Rutinas, compra, pendientes y notas de una mascota o de la manada, y los botones de añadir. */
+function GroupBody({ routines, items, logs, now, nameOf, onToggle, onAddRoutine, onEditRoutine, onAddItem, onEditItem, onToggleItem }: GroupBodyProps) {
   const theme = useTheme();
-  const pendingNow = routines
-    .flatMap((r) => currentOccurrences(r, logs, now))
-    .filter((o) => !o.log && (o.late || o.routine.frequency !== 'daily')).length;
-  const status = pendingNow === 0 ? 'Todo al día' : pendingNow === 1 ? '1 cosa por hacer' : `${pendingNow} cosas por hacer`;
-
   return (
-    <Card padded={false} style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: theme.spacing.md }}>
-        {avatar}
-        <View style={{ flex: 1 }}>
-          <Text variant="heading">{title}</Text>
-          {subtitle ? <Text variant="caption" color="secondary">{subtitle}</Text> : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            {owner ? (
-              <View style={{ paddingHorizontal: 8, paddingVertical: 1, borderRadius: theme.radii.pill, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }}>
-                <Text variant="caption" color="secondary">{owner}</Text>
-              </View>
-            ) : null}
-            <Text variant="caption" color="secondary">{status}</Text>
-          </View>
-        </View>
-        {onEdit ? (
-          <Pressable onPress={onEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Editar ${title}`}>
-            <MoreHorizontal size={22} color={theme.colors.textSecondary} />
-          </Pressable>
-        ) : null}
-      </View>
-
+    <View style={{ gap: theme.spacing.sm }}>
       {routines.map((routine) => (
         <RoutineRow key={routine.id} routine={routine} logs={logs} now={now} nameOf={nameOf} onToggle={onToggle} onEdit={() => onEditRoutine(routine)} />
       ))}
@@ -352,7 +401,67 @@ function GroupCard({
           <DashedButton key={kind} label={PET_ITEM_KINDS[kind].label} onPress={() => onAddItem(kind)} />
         ))}
       </View>
-    </Card>
+    </View>
+  );
+}
+
+type PetFoldProps = GroupBodyProps & {
+  pet: Pet;
+  owner: string;
+  open: boolean;
+  onToggleOpen: () => void;
+  onEdit: () => void;
+};
+
+/** Una mascota dentro de la manada: una fila que se despliega para ver sus cosas. */
+function PetFold({ pet, owner, open, onToggleOpen, onEdit, ...body }: PetFoldProps) {
+  const theme = useTheme();
+  const Chevron = open ? ChevronUp : ChevronDown;
+  return (
+    <View
+      style={{
+        marginHorizontal: theme.spacing.sm,
+        borderRadius: theme.radii.md,
+        borderWidth: 1,
+        borderColor: open ? theme.colors.outline : theme.colors.border,
+        backgroundColor: theme.colors.background,
+        overflow: 'hidden',
+      }}
+    >
+      <Pressable
+        onPress={onToggleOpen}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${pet.name}, ${open ? 'plegar' : 'desplegar'}`}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          padding: 10,
+          backgroundColor: pressed ? theme.colors.surfaceAlt : 'transparent',
+        })}
+      >
+        <PetAvatar photoUrl={pet.photo_url} type={pet.type} size={40} />
+        <View style={{ flex: 1 }}>
+          <Text variant="bodyBold">{pet.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <OwnerBadge label={owner} />
+            <Text variant="caption" color="secondary">{pendingLabel(body.routines, body.logs, body.now)}</Text>
+          </View>
+        </View>
+        {open ? (
+          <Pressable onPress={onEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Editar ${pet.name}`}>
+            <MoreHorizontal size={20} color={theme.colors.textSecondary} />
+          </Pressable>
+        ) : null}
+        <Chevron size={20} color={theme.colors.textSecondary} />
+      </Pressable>
+      {open ? (
+        <View style={{ paddingBottom: theme.spacing.sm }}>
+          <GroupBody {...body} />
+        </View>
+      ) : null}
+    </View>
   );
 }
 

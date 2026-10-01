@@ -10,10 +10,11 @@ import { DAY_NAMES, dateKey, parseDateKey, shortDate, weekDayOf } from './tasks'
 // Una toma hecha = una fila en pet_logs con (routine_id, for_date, slot). La base de
 // datos no deja marcar la misma toma dos veces (unique), así nadie repite comida.
 //
-// Una rutina o un apunte (pet_items) con pet_id null es de la manada: de todas
-// las mascotas del hogar. Con remind, la base de datos avisa cuando toca y nadie
-// lo ha marcado (a las horas de las diarias o a remind_at de las demás): a quien
-// es responsable de las mascotas o, si alguna es del piso, a todo el hogar.
+// Una rutina o un apunte (pet_items) con pet_id null es de la manada: de las
+// mascotas del hogar que forman parte de ella (in_pack). Con remind, la base de
+// datos avisa cuando toca y nadie lo ha marcado (a las horas de las diarias o a
+// remind_at de las demás): a quien es responsable de las mascotas o, si alguna
+// es del piso, a todo el hogar.
 
 export const PET_TYPES = [
   { value: 'perro', label: 'Perro', emoji: '🐶' },
@@ -32,8 +33,8 @@ export function petEmoji(type: string | null): string {
 
 export type PetFrequency = 'daily' | 'weekly' | 'interval' | 'monthly';
 
-/** owner_id: quien es responsable; null = del piso. */
-export type Pet = { id: string; name: string; type: string | null; photo_url: string | null; owner_id: string | null };
+/** owner_id: quien es responsable; null = del piso. in_pack: si forma parte de la manada. */
+export type Pet = { id: string; name: string; type: string | null; photo_url: string | null; owner_id: string | null; in_pack: boolean };
 
 /** A quién va algo: una mascota (su id) o la manada (null). */
 export type PetTarget = string | null;
@@ -278,7 +279,7 @@ export async function loadPetBoard(houseId: string) {
   const since = dateKey(addDays(new Date(), -LOG_DAYS));
   const doneSince = new Date(Date.now() - DONE_VISIBLE_MS).toISOString();
   const [petsRes, routinesRes, logsRes, itemsRes] = await Promise.all([
-    supabase.from('pets').select('id, name, type, photo_url, owner_id').eq('house_id', houseId).order('name'),
+    supabase.from('pets').select('id, name, type, photo_url, owner_id, in_pack').eq('house_id', houseId).order('name'),
     supabase
       .from('pet_routines')
       .select('id, pet_id, title, emoji, frequency, times, week_days, interval_days, month_day, start_date, position, remind, remind_at')
@@ -326,7 +327,7 @@ export type PetMember = { user_id: string; name: string; avatar_url: string | nu
  * responsable de las mascotas a las que toca; null = a todo el hogar (alguna es del piso).
  */
 export function reminderRecipients(target: PetTarget, pets: Pet[]): string[] | null {
-  const concerned = target === null ? pets : pets.filter((p) => p.id === target);
+  const concerned = target === null ? pets.filter((p) => p.in_pack) : pets.filter((p) => p.id === target);
   if (concerned.length === 0 || concerned.some((p) => !p.owner_id)) return null;
   return [...new Set(concerned.map((p) => p.owner_id as string))];
 }

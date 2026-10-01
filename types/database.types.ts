@@ -759,6 +759,7 @@ export type Database = {
           created_at: string
           house_id: string
           id: string
+          in_pack: boolean
           name: string
           owner_id: string | null
           photo_url: string | null
@@ -768,6 +769,7 @@ export type Database = {
           created_at?: string
           house_id: string
           id?: string
+          in_pack?: boolean
           name: string
           owner_id?: string | null
           photo_url?: string | null
@@ -777,6 +779,7 @@ export type Database = {
           created_at?: string
           house_id?: string
           id?: string
+          in_pack?: boolean
           name?: string
           owner_id?: string | null
           photo_url?: string | null

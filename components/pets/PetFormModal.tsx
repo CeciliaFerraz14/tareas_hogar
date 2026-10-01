@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
 import { Camera, Check, Trash2 } from 'lucide-react-native';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { Alert } from '../../lib/alert';
@@ -32,6 +32,8 @@ type PetFormModalProps = {
   userId: string;
   /** Miembros del hogar, para elegir quién se encarga. */
   members: PetMember[];
+  /** Cuántas mascotas más hay en el hogar: sin ninguna, no se pregunta por la manada. */
+  otherPets: number;
   /** Si se pasa, se edita esta mascota; si no, se crea una nueva. */
   pet: Pet | null;
 };
@@ -42,7 +44,7 @@ const isPetType = (v: string | null): v is PetTypeValue => PET_TYPES.some((t) =>
  * Nueva mascota (con sus rutinas de siempre ya propuestas según el tipo) o
  * editar su nombre, tipo, foto y quién se encarga (o si es del piso).
  */
-export function PetFormModal({ visible, onClose, onSaved, houseId, userId, members, pet }: PetFormModalProps) {
+export function PetFormModal({ visible, onClose, onSaved, houseId, userId, members, otherPets, pet }: PetFormModalProps) {
   const theme = useTheme();
   const editing = Boolean(pet);
 
@@ -50,6 +52,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
   const [type, setType] = useState<PetTypeValue>('perro');
   // Quién se encarga; null = del piso (de todos).
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [inPack, setInPack] = useState(true);
   // Índices de las rutinas sugeridas que se crearán (todas marcadas al principio).
   const [picked, setPicked] = useState<Set<number>>(new Set());
   // Foto elegida (se sube al guardar) o petición de quitar la que tiene.
@@ -65,6 +68,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
     const initialType = isPetType(pet?.type ?? null) ? (pet?.type as PetTypeValue) : 'perro';
     setType(initialType);
     setOwnerId(pet?.owner_id ?? null);
+    setInPack(pet?.in_pack ?? true);
     setPicked(new Set(suggestedRoutines(initialType).map((_, i) => i)));
     setPhotoAsset(null);
     setRemovePhoto(false);
@@ -117,11 +121,11 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
     try {
       let petId: string;
       if (pet) {
-        const { error } = await supabase.from('pets').update({ name: trimmed, type, owner_id: ownerId }).eq('id', pet.id);
+        const { error } = await supabase.from('pets').update({ name: trimmed, type, owner_id: ownerId, in_pack: inPack }).eq('id', pet.id);
         if (error) { Alert.alert('No se pudo guardar', error.message); return; }
         petId = pet.id;
       } else {
-        const { data, error } = await supabase.from('pets').insert({ house_id: houseId, name: trimmed, type, owner_id: ownerId }).select('id').single();
+        const { data, error } = await supabase.from('pets').insert({ house_id: houseId, name: trimmed, type, owner_id: ownerId, in_pack: inPack }).select('id').single();
         if (error || !data) { Alert.alert('No se pudo guardar la mascota', error?.message ?? ''); return; }
         const drafts = suggestions.filter((_, i) => picked.has(i));
         if (drafts.length > 0) {
@@ -279,6 +283,26 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
                 : 'Es de todos: los avisos de sus rutinas llegan a todo el piso.'}
             </Text>
           </View>
+
+          {otherPets > 0 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text variant="bodyBold">Forma parte de la manada</Text>
+                <Text variant="caption" color="secondary">
+                  {inPack
+                    ? 'Sale dentro de la manada y comparte sus rutinas, compras y notas.'
+                    : 'Va por su cuenta, con su propia tarjeta.'}
+                </Text>
+              </View>
+              <Switch
+                value={inPack}
+                onValueChange={setInPack}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor="#fff"
+                accessibilityLabel="Forma parte de la manada"
+              />
+            </View>
+          ) : null}
 
           {!editing ? (
             <View style={{ gap: 8 }}>

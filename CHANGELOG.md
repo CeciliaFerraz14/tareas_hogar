@@ -9,6 +9,20 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.19.0-beta] – 2026-10-01
+
+### Añadido
+- Cada mascota puede **formar parte de la manada o no** (interruptor al
+  crearla o editarla). Las que no forman parte, como el perro de otro
+  compañero, tienen su propia tarjeta y no comparten las cosas de la manada.
+
+### Cambiado
+- Las mascotas de la manada ya no salen sueltas: van **dentro de la tarjeta
+  de la manada**, cada una como un desplegable con sus rutinas, compras,
+  pendientes y notas. Debajo está lo que es de toda la manada.
+- Los avisos de una rutina de la manada van a quien se encarga de las
+  mascotas que forman parte de ella.
+
 ## [0.18.0-beta] – 2026-10-01
 
 ### Añadido
