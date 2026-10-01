@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Moon, Plus, ShoppingCart, Sun } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
-import { Sticker } from '../../../../components/ui/Labels';
+import { Subtitle } from '../../../../components/ui/Labels';
 import { Card } from '../../../../components/ui/Card';
 import { Avatar } from '../../../../components/ui/Avatar';
 import { Button } from '../../../../components/ui/Button';
@@ -237,9 +237,9 @@ export default function MenuScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text variant="heading">Menú semanal</Text>
-          <Sticker>
+          <Subtitle>
             {planned === 0 ? 'Nada planeado' : `${planned} de ${days.length * MEAL_SLOTS.length} comidas planeadas`}
-          </Sticker>
+          </Subtitle>
         </View>
         <Pressable
           onPress={() => router.push(`/(app)/house/${houseId}/recetas`)}

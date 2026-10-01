@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Check, ChevronDown, Home, KeyRound } from 'lucide-react-native';
 import { Text } from '../ui/Text';
 import { HouseAvatar } from '../ui/HouseAvatar';
-import { Sticker } from '../ui/Labels';
+import { Subtitle } from '../ui/Labels';
 import { CreateHouseModal, JoinHouseModal } from './HouseModals';
 import { useTheme } from '../../lib/theme';
 import { useChatStore } from '../../store/chatStore';
@@ -29,7 +29,7 @@ export function TabHeader({ house, title, subtitle, right }: TabHeaderProps) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="title" numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
-          {subtitle ? <Sticker style={{ marginTop: 2 }}>{subtitle}</Sticker> : null}
+          {subtitle ? <Subtitle style={{ marginTop: 2 }}>{subtitle}</Subtitle> : null}
         </View>
         {right}
       </View>

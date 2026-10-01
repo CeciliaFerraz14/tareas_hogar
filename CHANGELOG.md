@@ -9,6 +9,12 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.19.2-beta] – 2026-10-01
+
+### Cambiado
+- Fuera el papel kraft de los subtítulos (bajo «Menú semanal», «Recetario» y
+  el título de cada pestaña): ahora son texto en tinta, sin fondo.
+
 ## [0.19.1-beta] – 2026-10-01
 
 ### Cambiado

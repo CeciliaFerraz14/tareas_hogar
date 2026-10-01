@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, BookOpen, ChevronRight } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
-import { Sticker } from '../../../../components/ui/Labels';
+import { Subtitle } from '../../../../components/ui/Labels';
 import { Card } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { PlusButton } from '../../../../components/ui/PlusButton';
@@ -71,9 +71,9 @@ export default function RecetasScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text variant="heading">Recetario</Text>
-          <Sticker>
+          <Subtitle>
             {recipes.length === 0 ? 'Vuestros platos de siempre' : `${recipes.length} ${recipes.length === 1 ? 'receta' : 'recetas'}`}
-          </Sticker>
+          </Subtitle>
         </View>
         <PlusButton onPress={() => openRecipe(null)} accessibilityLabel="Nueva receta" />
       </View>
