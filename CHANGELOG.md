@@ -9,6 +9,15 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.19.3-beta] – 2026-10-01
+
+### Arreglado
+- La sección Mascotas de Hoy no cuadraba con la pantalla de Mascotas: solo
+  miraba las rutinas y decía «Todo hecho» aunque hubiera cosas pendientes.
+  Ahora enseña también los **pendientes** y lo que hay **para comprar** (de
+  cada mascota o de la manada), se tachan desde ahí y se actualiza al volver
+  a Hoy y en cuanto alguien cambia algo.
+
 ## [0.19.2-beta] – 2026-10-01
 
 ### Cambiado
