@@ -9,6 +9,14 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.19.1-beta] – 2026-10-01
+
+### Cambiado
+- **Iconos dibujados a mano** para los tipos de mascota (perro, gato, conejo,
+  pájaro, pez y la huella) y las rutinas (comida, agua, limpiar, pastillas,
+  baño, cepillo, tijeras, pelota), con el trazo de tinta y los colores de
+  HOMI, en vez de los emojis del móvil. Se ven igual en todos los teléfonos.
+
 ## [0.19.0-beta] – 2026-10-01
 
 ### Añadido

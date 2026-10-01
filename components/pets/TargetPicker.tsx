@@ -1,7 +1,8 @@
 import { Pressable, View } from 'react-native';
 import { Text } from '../ui/Text';
 import { useTheme } from '../../lib/theme';
-import { petEmoji, type Pet, type PetTarget } from '../../lib/pets';
+import { PetTypeIcon } from './PetIcons';
+import type { Pet, PetTarget } from '../../lib/pets';
 
 type TargetPickerProps = {
   pets: Pet[];
@@ -12,9 +13,10 @@ type TargetPickerProps = {
 /** «Para quién»: la manada (todas las mascotas) o una de ellas. */
 export function TargetPicker({ pets, value, onChange }: TargetPickerProps) {
   const theme = useTheme();
-  const options: { target: PetTarget; emoji: string; label: string }[] = [
-    { target: null, emoji: '🐾', label: 'La manada' },
-    ...pets.map((p) => ({ target: p.id, emoji: petEmoji(p.type), label: p.name })),
+  // La manada lleva la huella (PetTypeIcon sin tipo).
+  const options: { target: PetTarget; type: string | null; label: string }[] = [
+    { target: null, type: null, label: 'La manada' },
+    ...pets.map((p) => ({ target: p.id, type: p.type, label: p.name })),
   ];
   return (
     <View style={{ gap: 6 }}>
@@ -37,7 +39,7 @@ export function TargetPicker({ pets, value, onChange }: TargetPickerProps) {
                   backgroundColor: on ? theme.colors.peach : theme.colors.surface,
                 }}
               >
-                <Text style={{ fontSize: 16, lineHeight: 20 }}>{o.emoji}</Text>
+                <PetTypeIcon type={o.type} size={22} />
                 <Text variant="label" color={on ? 'onFill' : 'secondary'}>{o.label}</Text>
               </View>
             </Pressable>

@@ -10,6 +10,7 @@ import { Avatar } from '../ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../lib/images';
 import { PetAvatar } from './PetAvatar';
+import { PetTypeIcon, RoutineIcon } from './PetIcons';
 import { useTheme } from '../../lib/theme';
 import { dateKey } from '../../lib/tasks';
 import {
@@ -240,7 +241,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
                         backgroundColor: on ? theme.colors.peach : theme.colors.surface,
                       }}
                     >
-                      <Text style={{ fontSize: 16, lineHeight: 20 }}>{t.emoji}</Text>
+                      <PetTypeIcon type={t.value} size={24} />
                       <Text variant="label" color={on ? 'onFill' : 'secondary'}>{t.label}</Text>
                     </View>
                   </Pressable>
@@ -326,7 +327,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, membe
                       backgroundColor: theme.colors.surface,
                     }}
                   >
-                    <Text style={{ fontSize: 20, lineHeight: 26 }}>{s.emoji}</Text>
+                    <RoutineIcon emoji={s.emoji} size={30} />
                     <View style={{ flex: 1 }}>
                       <Text variant="bodyBold">{s.title}</Text>
                       <Text variant="caption" color="secondary">{scheduleLabel(s)}</Text>

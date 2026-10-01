@@ -9,6 +9,7 @@ import { subscribeToHouseTables } from '../../lib/realtime';
 import { useTheme } from '../../lib/theme';
 import { currentOccurrences, loadPetBoard, markDone, type Occurrence, type Pet, type PetLog, type PetRoutine } from '../../lib/pets';
 import { PackAvatar, PetAvatar } from '../pets/PetAvatar';
+import { RoutineIcon } from '../pets/PetIcons';
 
 type TodayPetsProps = {
   houseId: string;
@@ -113,7 +114,10 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
                 </View>
                 {occ.routine.pet_id ? <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} /> : <PackAvatar pets={pets.filter((p) => p.in_pack)} size={30} />}
                 <View style={{ flex: 1 }}>
-                  <Text variant="bodyBold" numberOfLines={1}>{`${occ.routine.emoji} ${occ.routine.title}`}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <RoutineIcon emoji={occ.routine.emoji} size={20} />
+                    <Text variant="bodyBold" numberOfLines={1} style={{ flexShrink: 1 }}>{occ.routine.title}</Text>
+                  </View>
                   <Text variant="caption" color="secondary">{who}</Text>
                 </View>
                 <View

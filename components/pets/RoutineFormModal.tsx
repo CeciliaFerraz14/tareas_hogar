@@ -6,6 +6,7 @@ import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { TargetPicker } from './TargetPicker';
+import { RoutineIcon } from './PetIcons';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/theme';
 import { DAYS, dateKey, weekDayOf } from '../../lib/tasks';
@@ -234,7 +235,7 @@ export function RoutineFormModal({ visible, onClose, onSaved, houseId, userId, p
                     backgroundColor: emoji === e ? theme.colors.peach : theme.colors.surface,
                   }}
                 >
-                  <Text style={{ fontSize: 20, lineHeight: 26 }}>{e}</Text>
+                  <RoutineIcon emoji={e} size={30} />
                 </Pressable>
               ))}
             </View>

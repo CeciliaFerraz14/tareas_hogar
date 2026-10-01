@@ -1,8 +1,7 @@
 import { View } from 'react-native';
 import { Image } from 'expo-image';
-import { Text } from '../ui/Text';
 import { useTheme } from '../../lib/theme';
-import { petEmoji } from '../../lib/pets';
+import { PetTypeIcon } from './PetIcons';
 
 type PetAvatarProps = {
   /** Foto (pets.photo_url) o, si no tiene, el emoji de su tipo. */
@@ -11,7 +10,7 @@ type PetAvatarProps = {
   size?: number;
 };
 
-/** Foto redonda de la mascota con borde de tinta, o su emoji sobre mostaza. */
+/** Foto redonda de la mascota con borde de tinta, o el dibujo de su tipo. */
 export function PetAvatar({ photoUrl, type, size = 52 }: PetAvatarProps) {
   const theme = useTheme();
   const frame = {
@@ -25,8 +24,8 @@ export function PetAvatar({ photoUrl, type, size = 52 }: PetAvatarProps) {
     return <Image source={{ uri: photoUrl }} style={[frame, { backgroundColor: theme.colors.surfaceAlt }]} contentFit="cover" />;
   }
   return (
-    <View style={[frame, { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.mustard }]}>
-      <Text style={{ fontSize: size * 0.54, lineHeight: size * 0.66 }}>{petEmoji(type)}</Text>
+    <View style={[frame, { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt }]}>
+      <PetTypeIcon type={type} size={size * 0.78} />
     </View>
   );
 }

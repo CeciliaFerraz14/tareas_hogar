@@ -12,6 +12,7 @@ import { PetFormModal } from '../../../../components/pets/PetFormModal';
 import { RoutineFormModal } from '../../../../components/pets/RoutineFormModal';
 import { PetItemFormModal } from '../../../../components/pets/PetItemFormModal';
 import { PackAvatar, PetAvatar } from '../../../../components/pets/PetAvatar';
+import { RoutineIcon } from '../../../../components/pets/PetIcons';
 import { useAuthStore } from '../../../../store/authStore';
 import { useSyncActiveHouse } from '../../../../store/houseStore';
 import { supabase } from '../../../../lib/supabase';
@@ -490,7 +491,7 @@ function RoutineRow({ routine, logs, now, nameOf, onToggle, onEdit }: RoutineRow
   return (
     <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 8, gap: 6, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
       <Pressable onPress={onEdit} accessibilityRole="button" accessibilityHint="Editar rutina" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ fontSize: 20, lineHeight: 26 }}>{routine.emoji}</Text>
+        <RoutineIcon emoji={routine.emoji} size={30} />
         <View style={{ flex: 1 }}>
           <Text variant="bodyBold">{routine.title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

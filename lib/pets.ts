@@ -17,19 +17,15 @@ import { DAY_NAMES, dateKey, parseDateKey, shortDate, weekDayOf } from './tasks'
 // es del piso, a todo el hogar.
 
 export const PET_TYPES = [
-  { value: 'perro', label: 'Perro', emoji: '🐶' },
-  { value: 'gato', label: 'Gato', emoji: '🐱' },
-  { value: 'conejo', label: 'Conejo', emoji: '🐰' },
-  { value: 'pájaro', label: 'Pájaro', emoji: '🐦' },
-  { value: 'pez', label: 'Pez', emoji: '🐟' },
-  { value: 'otro', label: 'Otro', emoji: '🐾' },
+  { value: 'perro', label: 'Perro' },
+  { value: 'gato', label: 'Gato' },
+  { value: 'conejo', label: 'Conejo' },
+  { value: 'pájaro', label: 'Pájaro' },
+  { value: 'pez', label: 'Pez' },
+  { value: 'otro', label: 'Otro' },
 ] as const;
 
 export type PetTypeValue = (typeof PET_TYPES)[number]['value'];
-
-export function petEmoji(type: string | null): string {
-  return PET_TYPES.find((t) => t.value === type)?.emoji ?? '🐾';
-}
 
 export type PetFrequency = 'daily' | 'weekly' | 'interval' | 'monthly';
 
@@ -100,6 +96,10 @@ export const PET_ITEM_KINDS: Record<PetItemKind, { label: string; title: string;
   note: { label: 'Nota', title: 'Notas', placeholder: 'Ej. Es alérgico al pollo. Veterinario: 600 000 000', max: 1000 },
 };
 
+/**
+ * Iconos de rutina. Se guarda el emoji (pet_routines.emoji): la app lo pinta con
+ * su dibujo (components/pets/petIconShapes.ts) y los avisos lo llevan tal cual.
+ */
 export const ROUTINE_EMOJIS = ['🍖', '💧', '🧹', '💊', '🛁', '🪮', '✂️', '🎾', '🐾'] as const;
 export const TIME_PRESETS = ['08:00', '09:00', '14:00', '18:00', '20:00', '21:30'] as const;
 export const ROUTINE_TITLE_MAX = 60;
