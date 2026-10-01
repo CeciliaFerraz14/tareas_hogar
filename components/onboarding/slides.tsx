@@ -734,7 +734,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'menu',
     title: '¿Qué comemos hoy?',
-    body: 'Planead comidas y cenas, decid quién come en casa y quién cocina (le llega un aviso). Las recetas pasan sus ingredientes a la compra con un toque.',
+    body: 'Planead las comidas y cenas y quién cocina (le llega un aviso). Las recetas pasan sus ingredientes a la compra con un toque.',
     Story: MenuStory,
   },
   {

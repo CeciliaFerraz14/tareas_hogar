@@ -11,7 +11,6 @@ export type HouseBroadcastTable =
   | 'house_chat_reads'
   | 'meal_plan_entries'
   | 'recipes'
-  | 'meal_attendance'
   | 'pets'
   | 'pet_routines'
   | 'pet_logs';

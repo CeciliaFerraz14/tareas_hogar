@@ -40,8 +40,6 @@ type MealFormModalProps = {
   members: MealMember[];
   /** El recetario del hogar, para elegir el plato de ahí. */
   recipes: Recipe[];
-  /** Quién ha dicho si come en casa en este hueco (user_id → sí/no). */
-  attendance: Map<string, boolean>;
   /** El hueco que se está rellenando. */
   date: Date;
   slot: MealSlot;
@@ -58,7 +56,6 @@ export function MealFormModal({
   userId,
   members,
   recipes,
-  attendance,
   date,
   slot,
   entry,
@@ -69,8 +66,6 @@ export function MealFormModal({
   const [title, setTitle] = useState('');
   const [cookId, setCookId] = useState<string | null>(null);
   const [recipeId, setRecipeId] = useState<string | null>(null);
-  // Mi respuesta a "¿comes en casa?" (null = sin contestar). Se guarda al tocarla.
-  const [myEating, setMyEating] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -80,7 +75,6 @@ export function MealFormModal({
     setTitle(entry?.title ?? '');
     setCookId(entry?.cook_id ?? null);
     setRecipeId(entry?.recipe_id ?? null);
-    setMyEating(attendance.get(userId) ?? null);
     // Solo al abrir: no pisar lo que se está escribiendo si la pantalla recarga.
   }, [visible]);
 
@@ -103,33 +97,6 @@ export function MealFormModal({
     ? recipes.filter((r) => normalizeTitle(r.title).includes(query))
     : recipes
   ).slice(0, MAX_RECIPE_CHIPS);
-
-  // Va aparte del plato: se puede contestar aunque aún no haya nada apuntado.
-  async function answerEating(value: boolean) {
-    const previous = myEating;
-    const next = previous === value ? null : value; // tocar la misma respuesta la quita
-    setMyEating(next);
-    const { error } = await supabase.rpc('set_meal_attendance', {
-      p_house_id: houseId,
-      p_date: dateKey(date),
-      p_slot: slot,
-      p_eating: next ?? undefined,
-    });
-    if (error) {
-      setMyEating(previous);
-      Alert.alert('No se pudo guardar tu respuesta', error.message);
-      return;
-    }
-    onSaved();
-  }
-
-  const nameOf = (id: string) => {
-    const m = members.find((x) => x.user_id === id);
-    return m?.username?.trim() || m?.email.split('@')[0] || '—';
-  };
-  const others = [...attendance.entries()].filter(([id]) => id !== userId);
-  const othersYes = others.filter(([, eating]) => eating).map(([id]) => nameOf(id));
-  const othersNo = others.filter(([, eating]) => !eating).map(([id]) => nameOf(id));
 
   async function save() {
     const trimmed = title.trim();
@@ -300,36 +267,6 @@ export function MealFormModal({
               </ScrollView>
             </View>
           ) : null}
-
-          {/* ¿comes en casa? */}
-          <View style={{ gap: 6 }}>
-            <Text variant="label" color="secondary">{slot === 'lunch' ? '¿Comes en casa?' : '¿Cenas en casa?'}</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {([
-                { value: true, label: 'Sí' },
-                { value: false, label: 'No' },
-              ] as const).map(({ value, label }) => (
-                <Pressable
-                  key={label}
-                  onPress={() => void answerEating(value)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: myEating === value }}
-                >
-                  <View style={{ ...chip(myEating === value), minWidth: 64, alignItems: 'center' }}>
-                    <Text variant="label" color={myEating === value ? 'inverse' : 'secondary'}>{label}</Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-            {othersYes.length > 0 || othersNo.length > 0 ? (
-              <Text variant="caption" color="secondary">
-                {[
-                  othersYes.length > 0 ? `${slot === 'lunch' ? 'Comen' : 'Cenan'}: ${othersYes.join(', ')}` : null,
-                  othersNo.length > 0 ? `No: ${othersNo.join(', ')}` : null,
-                ].filter(Boolean).join(' · ')}
-              </Text>
-            ) : null}
-          </View>
 
           <Button title={editing ? 'Guardar cambios' : 'Apuntar plato'} loading={saving} onPress={save} />
           <Button title="Cancelar" variant="ghost" onPress={onClose} />

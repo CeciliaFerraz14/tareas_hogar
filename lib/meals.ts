@@ -31,24 +31,6 @@ export type Recipe = {
   ingredients: RecipeIngredient[];
 };
 
-/**
- * ¿Quién come en casa? Por hueco (`mealKey`): user_id → true (come) / false (no).
- * Quien no está en el mapa aún no ha contestado.
- */
-export type Attendance = Map<string, Map<string, boolean>>;
-
-/** '3 comen · 1 no', o null si nadie ha contestado. */
-export function attendanceSummary(answers: Map<string, boolean> | undefined): string | null {
-  if (!answers || answers.size === 0) return null;
-  const yes = [...answers.values()].filter(Boolean).length;
-  const no = answers.size - yes;
-  const parts = [
-    yes > 0 ? `${yes} ${yes === 1 ? 'come' : 'comen'}` : null,
-    no > 0 ? `${no} no` : null,
-  ].filter((p): p is string => p !== null);
-  return parts.join(' · ');
-}
-
 /** Límites de recipes y recipe_ingredients (los comprueba también save_recipe). */
 export const RECIPE_LIMITS = { title: 120, notes: 2000, ingredient: 80, quantity: 30, ingredients: 50 } as const;
 

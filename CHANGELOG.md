@@ -9,6 +9,13 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.16.2-beta] – 2026-10-01
+
+### Quitado
+- El «¿Comes en casa?» del menú: ya no salen los botones Sí / No al abrir una
+  comida o cena, ni el «3 comen · 1 no» de cada fila, ni cuántos comen en el
+  recordatorio de quien cocina.
+
 ## [0.16.1-beta] – 2026-10-01
 
 ### Cambiado

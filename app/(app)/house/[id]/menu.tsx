@@ -18,7 +18,6 @@ import { DAY_NAMES, dateKey, parseDateKey, shortDate, weekDayOf } from '../../..
 import {
   MEAL_SLOTS,
   addDays,
-  attendanceSummary,
   isMealSlot,
   loadRecipes,
   mealKey,
@@ -26,7 +25,6 @@ import {
   weekDays,
   weekRangeLabel,
   weekTitle,
-  type Attendance,
   type MealEntry,
   type MealSlot,
   type Recipe,
@@ -47,7 +45,6 @@ export default function MenuScreen() {
   const [entries, setEntries] = useState<Map<string, MealEntry>>(new Map());
   const [members, setMembers] = useState<MealMember[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [attendance, setAttendance] = useState<Attendance>(new Map());
   const [copyingWeek, setCopyingWeek] = useState(false);
   const [sendingToShopping, setSendingToShopping] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +58,7 @@ export default function MenuScreen() {
 
   const loadData = useCallback(async () => {
     if (!houseId) return;
-    const [entriesRes, membersRes, recipesList, attendanceRes] = await Promise.all([
+    const [entriesRes, membersRes, recipesList] = await Promise.all([
       supabase
         .from('meal_plan_entries')
         .select('id, date, slot, title, cook_id, recipe_id')
@@ -75,12 +72,6 @@ export default function MenuScreen() {
         .order('joined_at', { ascending: true }),
       // Sin recetario el menú sigue funcionando: solo faltan las sugerencias.
       loadRecipes(houseId).catch(() => null),
-      supabase
-        .from('meal_attendance')
-        .select('date, slot, user_id, eating')
-        .eq('house_id', houseId)
-        .gte('date', dateKey(monday))
-        .lte('date', dateKey(addDays(monday, 6))),
     ]);
     if (entriesRes.error) { Alert.alert('Error al cargar el menú', entriesRes.error.message); return; }
     const byKey = new Map<string, MealEntry>();
@@ -88,16 +79,6 @@ export default function MenuScreen() {
       if (isMealSlot(e.slot)) byKey.set(mealKey(e.date, e.slot), { ...e, slot: e.slot });
     }
     setEntries(byKey);
-    if (attendanceRes.data) {
-      const bySlot: Attendance = new Map();
-      for (const a of attendanceRes.data) {
-        if (!isMealSlot(a.slot)) continue;
-        const key = mealKey(a.date, a.slot);
-        if (!bySlot.has(key)) bySlot.set(key, new Map());
-        bySlot.get(key)?.set(a.user_id, a.eating);
-      }
-      setAttendance(bySlot);
-    }
     if (recipesList) setRecipes(recipesList);
     if (membersRes.data) {
       setMembers(
@@ -118,7 +99,7 @@ export default function MenuScreen() {
   // Realtime por Broadcast: si alguien cambia un plato o una receta, se ve al momento.
   useEffect(() => {
     if (!houseId) return;
-    return subscribeToHouseTables(houseId, ['meal_plan_entries', 'recipes', 'meal_attendance'], () => { void loadData(); });
+    return subscribeToHouseTables(houseId, ['meal_plan_entries', 'recipes'], () => { void loadData(); });
   }, [houseId, loadData]);
 
   const memberById = (id: string | null) => members.find((m) => m.user_id === id) ?? null;
@@ -208,14 +189,13 @@ export default function MenuScreen() {
   function renderSlot(day: Date, slot: MealSlot, label: string) {
     const entry = entries.get(mealKey(day, slot)) ?? null;
     const cook = memberById(entry?.cook_id ?? null);
-    const answers = attendanceSummary(attendance.get(mealKey(day, slot)));
     const Icon = slot === 'lunch' ? Sun : Moon;
     return (
       <Pressable
         key={slot}
         onPress={() => { setOpenSlot({ date: day, slot, entry }); setFormOpen(true); }}
         accessibilityRole="button"
-        accessibilityLabel={[entry ? `${label}: ${entry.title}` : `Añadir ${label.toLowerCase()}`, answers].filter(Boolean).join('. ')}
+        accessibilityLabel={entry ? `${label}: ${entry.title}` : `Añadir ${label.toLowerCase()}`}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -242,7 +222,6 @@ export default function MenuScreen() {
               <Text variant="caption" color="secondary">Añadir</Text>
             </View>
           )}
-          {answers ? <Text variant="caption" color="secondary">{answers}</Text> : null}
         </View>
         {cook ? <Avatar uri={cook.avatar_url} name={cook.username ?? cook.email} size={28} /> : null}
       </Pressable>
@@ -379,7 +358,6 @@ export default function MenuScreen() {
           userId={user.id}
           members={members}
           recipes={recipes}
-          attendance={attendance.get(mealKey(openSlot.date, openSlot.slot)) ?? new Map()}
           date={openSlot.date}
           slot={openSlot.slot}
           entry={openSlot.entry}
