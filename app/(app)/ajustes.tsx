@@ -29,7 +29,7 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../components/ui/Screen';
 import { Text } from '../../components/ui/Text';
-import { TapeLabel } from '../../components/ui/Labels';
+import { SectionTitle } from '../../components/ui/Labels';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -469,7 +469,7 @@ export default function SettingsScreen() {
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: string }) {
-  return <TapeLabel style={{ marginBottom: -4 }}>{children}</TapeLabel>;
+  return <SectionTitle style={{ marginBottom: -4 }}>{children}</SectionTitle>;
 }
 
 type SettingsRowProps = {

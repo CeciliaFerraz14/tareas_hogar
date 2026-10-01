@@ -4,7 +4,7 @@ import { Check, ChevronRight, PartyPopper } from 'lucide-react-native';
 import { Alert } from '../../lib/alert';
 import { Card } from '../ui/Card';
 import { Text } from '../ui/Text';
-import { TapeLabel } from '../ui/Labels';
+import { SectionTitle } from '../ui/Labels';
 import { subscribeToHouseTables } from '../../lib/realtime';
 import { useTheme } from '../../lib/theme';
 import { currentOccurrences, loadPetBoard, markDone, petEmoji, type Occurrence, type Pet, type PetLog, type PetRoutine } from '../../lib/pets';
@@ -68,7 +68,7 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
 
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <TapeLabel>Mascotas</TapeLabel>
+      <SectionTitle>Mascotas</SectionTitle>
       <Card padded={false} style={{ ...theme.shadows.small, paddingVertical: 6 }}>
         {pending.length === 0 ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: theme.spacing.lg, paddingVertical: 10 }}>

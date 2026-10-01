@@ -716,7 +716,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'today',
     title: 'Tu día, de un vistazo',
-    body: 'En Hoy tienes el día de tu hogar: tus tareas, qué se come (y si comes en casa), la compra y los mensajes nuevos.',
+    body: 'En Hoy tienes el día de tu hogar: tus tareas, qué se come, las mascotas, la compra y los mensajes nuevos.',
     Story: TodayStory,
   },
   {

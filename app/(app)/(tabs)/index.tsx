@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MessageCircle, ShoppingCart } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
-import { TapeLabel } from '../../../components/ui/Labels';
+import { SectionTitle } from '../../../components/ui/Labels';
 import { HouseGate } from '../../../components/house/HouseGate';
 import { TabHeader } from '../../../components/house/HouseSwitcher';
 import { TodayTasks } from '../../../components/home/TodayTasks';
@@ -70,7 +70,7 @@ function HoyScreen({ house }: { house: MyHouse }) {
 
         {user ? (
           <Section title="Hoy se come">
-            <TodayMeals houseId={house.id} userId={user.id} onOpenMenu={() => router.push(`/(app)/house/${house.id}/menu`)} />
+            <TodayMeals houseId={house.id} onOpenMenu={() => router.push(`/(app)/house/${house.id}/menu`)} />
           </Section>
         ) : null}
 
@@ -103,7 +103,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   const theme = useTheme();
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <TapeLabel>{title}</TapeLabel>
+      <SectionTitle>{title}</SectionTitle>
       {children}
     </View>
   );

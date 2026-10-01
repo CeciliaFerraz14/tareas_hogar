@@ -5,7 +5,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Check, Plus, ShoppingCart, Trash2, X } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
-import { TapeLabel } from '../../../components/ui/Labels';
+import { SectionTitle } from '../../../components/ui/Labels';
 import { Card } from '../../../components/ui/Card';
 import { ComposerBar } from '../../../components/ui/ComposerBar';
 import { useAuthStore } from '../../../store/authStore';
@@ -228,7 +228,7 @@ function CompraScreen({ house }: { house: MyHouse }) {
                 <View style={{ gap: 10, marginTop: theme.spacing.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ flex: 1 }}>
-                      <TapeLabel>{`En el carro · ${purchased.length}`}</TapeLabel>
+                      <SectionTitle>{`En el carro · ${purchased.length}`}</SectionTitle>
                     </View>
                     <Pressable
                       onPress={clearPurchased}

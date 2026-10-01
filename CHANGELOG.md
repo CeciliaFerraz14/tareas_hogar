@@ -9,6 +9,15 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.16.1-beta] – 2026-10-01
+
+### Cambiado
+- Los títulos de sección («Para hoy», «Hoy se come», «Mascotas», «En el
+  carro»…) ya no van en la cinta mostaza: ahora son letra blanca con sombra
+  de tinta.
+- En Hoy, «Hoy se come» enseña solo la comida y la cena: se quitan los
+  botones «Como / Ceno / No».
+
 ## [0.16.0-beta] – 2026-09-30
 
 ### Añadido

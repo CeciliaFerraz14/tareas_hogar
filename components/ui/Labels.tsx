@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Line, Path } from 'react-native-svg';
 import { Text } from './Text';
 import { brand } from '../../lib/theme';
 
 // El fondo de acuarela (y la madera, en oscuro) no es liso: el texto fino
 // suelto encima se lee mal. Lo que va directamente sobre el fondo se pone en
-// una tira de papel kraft (subtítulos) o en un trozo de cinta (títulos de sección).
+// una tira de papel kraft (subtítulos) o en blanco con sombra de tinta (títulos de sección).
 
 // Papel kraft: bordes rasgados y fibras con un pseudoaleatorio fijo, para que la
 // forma sea siempre la misma (no cambia entre renders ni entre pantallas).
@@ -53,39 +53,28 @@ export function Sticker({ children, style }: { children: ReactNode; style?: Styl
   );
 }
 
-// Tira horizontal con los extremos rasgados (fijos, para que no cambie entre renders).
-const LEFT_EDGE = [0, 5, 1, 6, 2, 5, 0];
-const RIGHT_EDGE = [2, 7, 1, 6, 3, 7, 1];
-const TAPE_PATH = (() => {
-  const h = 40;
-  const step = h / (LEFT_EDGE.length - 1);
-  const right = RIGHT_EDGE.map((d, i) => `L${200 - d} ${(i * step).toFixed(1)}`).join(' ');
-  const left = [...LEFT_EDGE]
-    .reverse()
-    .map((d, i) => `L${d} ${(h - i * step).toFixed(1)}`)
-    .join(' ');
-  return `M${LEFT_EDGE[0]} 0 ${right} ${left} Z`;
-})();
-
-/** Título de sección en un trozo de cinta mostaza, como la cinta del logo. */
-export function TapeLabel({ children, style }: { children: string; style?: StyleProp<ViewStyle> }) {
+/**
+ * Título de sección sobre el fondo ("Para hoy", "Hoy se come"…): letra blanca con
+ * sombra dura de tinta, como los botones y tarjetas de HOMI. La sombra hace falta:
+ * el blanco solo no se ve sobre el melocotón claro.
+ */
+export function SectionTitle({ children, style }: { children: string; style?: StyleProp<ViewStyle> }) {
   return (
-    <View
-      accessibilityRole="header"
-      style={[{ alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 4, transform: [{ rotate: '-1.5deg' }] }, style]}
-    >
-      <Svg viewBox="0 0 200 40" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="homiTapeLabel" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={brand.tape[0]} />
-            <Stop offset="0.6" stopColor={brand.tape[1]} />
-            <Stop offset="1" stopColor={brand.tape[2]} />
-          </LinearGradient>
-        </Defs>
-        <Path d={TAPE_PATH} fill="url(#homiTapeLabel)" />
-      </Svg>
-      {/* La cinta es mostaza en claro y en oscuro: el texto, siempre en tinta. */}
-      <Text variant="label" style={{ color: brand.ink, textTransform: 'uppercase', letterSpacing: 1 }}>
+    <View accessibilityRole="header" style={[{ alignSelf: 'flex-start' }, style]}>
+      <Text
+        style={{
+          color: brand.white,
+          fontFamily: 'Fredoka_700Bold',
+          fontSize: 17,
+          lineHeight: 22,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+          textShadowColor: brand.ink,
+          textShadowOffset: { width: 2, height: 2 },
+          // Sin desenfoque (sombra dura). En Android tiene que ser > 0 para que se pinte.
+          textShadowRadius: 0.1,
+        }}
+      >
         {children}
       </Text>
     </View>

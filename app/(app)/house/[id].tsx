@@ -14,7 +14,7 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
-import { TapeLabel } from '../../../components/ui/Labels';
+import { SectionTitle } from '../../../components/ui/Labels';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Avatar } from '../../../components/ui/Avatar';
@@ -309,7 +309,7 @@ export default function HouseDetail() {
       </View>
 
       <View style={{ gap: 8 }}>
-        <TapeLabel>{`Miembros (${members.length})`}</TapeLabel>
+        <SectionTitle>{`Miembros (${members.length})`}</SectionTitle>
         <Card>
           <View style={{ gap: 14 }}>
             {members.map((m) => (
