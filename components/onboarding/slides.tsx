@@ -639,7 +639,7 @@ function PetsStory({ active, reduced }: StoryProps) {
       </Appear>
       {[
         { title: 'Darle de comer', face: ANA, at: 600, done: 2200 },
-        { title: 'Paseo de la tarde', face: LEO, at: 780, done: null },
+        { title: 'Comprar pienso', face: LEO, at: 780, done: null },
       ].map(({ title, face, at, done }) => (
         <Appear key={title} t={t} frames={showBetween(at, out)} from="right">
           <MiniRow style={{ paddingVertical: 6 }}>
@@ -752,7 +752,7 @@ export const SLIDES: readonly Slide[] = [
   {
     key: 'pets',
     title: 'Las mascotas también cuentan',
-    body: 'Apunta sus rutinas (comida, paseos, arena…) y marca lo que haces: todo el piso sabrá si ya ha comido, y no comerá dos veces.',
+    body: 'Apunta quién se encarga, sus rutinas (comida, arena…) con aviso y lo que hay que comprar, de cada una o de toda la manada. Todo el piso sabrá si ya ha comido.',
     Story: PetsStory,
   },
   {

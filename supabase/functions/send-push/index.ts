@@ -2,24 +2,27 @@
 // del hogar cuando alguien escribe en el chat, crea o tacha una tarea, añade o
 // tacha algo de la compra o apunta un gasto. También avisa a quien cocina: al
 // apuntarle otra persona y el mismo día a las 10 (recordatorio de pg_cron).
+// Y de las rutinas de las mascotas que tienen aviso, cuando tocan y nadie las ha
+// marcado (send_pet_reminders, pg_cron): a quien se encarga o a todo el hogar.
 // La llaman los triggers de la base de datos (pg_net) con la cabecera
 // x-push-secret; no la llama la app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
-type Kind = 'chat' | 'tasks' | 'shopping' | 'expenses' | 'menu';
+type Kind = 'chat' | 'tasks' | 'shopping' | 'expenses' | 'menu' | 'pets';
 type Payload = { title: string; body: string; url: string; tag: string };
 type Row = Record<string, unknown>;
 // 'created' = algo nuevo (por defecto). task_done y shopping_* los manda
 // private.enqueue_done_push; cook_assigned, enqueue_cook_push; cook_reminder,
-// send_cook_reminders (pg_cron).
+// send_cook_reminders (pg_cron); pet_reminder, send_pet_reminders (pg_cron).
 type PushEvent =
   | 'created'
   | 'task_done'
   | 'shopping_started'
   | 'shopping_finished'
   | 'cook_assigned'
-  | 'cook_reminder';
+  | 'cook_reminder'
+  | 'pet_reminder';
 
 type ReminderMeal = { slot: string; title: string; eating: number };
 
@@ -30,6 +33,7 @@ const KIND_BY_TABLE: Record<string, Kind> = {
   shopping_items: 'shopping',
   expenses: 'expenses',
   meal_plan_entries: 'menu',
+  pet_routines: 'pets',
 };
 
 // Quién lo ha creado, según la tabla. (Al tachar, lo manda el trigger en actor_id.)
@@ -39,6 +43,7 @@ const ACTOR_COLUMN: Record<Kind, string> = {
   shopping: 'added_by',
   expenses: 'created_by',
   menu: 'created_by',
+  pets: 'created_by',
 };
 
 const serviceKey =
@@ -139,6 +144,11 @@ Deno.serve(async (req) => {
   // en el menú, solo quien cocina).
   let recipients = (membersRes.data ?? []).map((m) => m.user_id as string).filter((id) => id !== actorId);
   if (kind === 'menu') recipients = recipients.filter((id) => id === record.cook_id);
+  // Rutina de mascota: a quien se encarga (null = todo el hogar).
+  if (event === 'pet_reminder' && Array.isArray(record.recipient_ids)) {
+    const owners = new Set(record.recipient_ids as string[]);
+    recipients = recipients.filter((id) => owners.has(id));
+  }
   const owedByUser = new Map<string, number>();
   if (kind === 'expenses') {
     const { data: splits } = await admin
@@ -153,7 +163,7 @@ Deno.serve(async (req) => {
   if (recipients.length > 0) {
     const { data: prefs } = await admin
       .from('notification_prefs')
-      .select('user_id, chat, tasks, shopping, expenses, menu')
+      .select('user_id, chat, tasks, shopping, expenses, menu, pets')
       .in('user_id', recipients);
     const optedOut = new Set((prefs ?? []).filter((p) => p[kind] === false).map((p) => p.user_id as string));
     recipients = recipients.filter((id) => !optedOut.has(id));
@@ -204,6 +214,15 @@ Deno.serve(async (req) => {
           url: `/house/${houseId}/menu`,
           tag: `cook-reminder-${houseId}`,
         };
+      case 'pet_reminder': {
+        const who = record.pet_name ? String(record.pet_name) : 'la manada';
+        return {
+          title: `${record.emoji ?? '🐾'} Toca: ${record.title}`,
+          body: `${who} · ${record.at} · Nadie lo ha marcado aún · ${houseName}`,
+          url: `/house/${houseId}/mascotas`,
+          tag: `pet-${record.id}-${record.slot}`,
+        };
+      }
     }
     switch (kind) {
       case 'chat':
@@ -249,6 +268,13 @@ Deno.serve(async (req) => {
           body: String(record.title ?? ''),
           url: `/house/${houseId}/menu`,
           tag: `menu-${houseId}`,
+        };
+      case 'pets':
+        return {
+          title: `🐾 Mascotas de ${houseName}`,
+          body: String(record.title ?? ''),
+          url: `/house/${houseId}/mascotas`,
+          tag: `pet-${record.id}`,
         };
     }
   }

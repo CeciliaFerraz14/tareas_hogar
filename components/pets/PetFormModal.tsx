@@ -6,6 +6,7 @@ import { Alert } from '../../lib/alert';
 import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Avatar } from '../ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource } from '../../lib/images';
 import { PetAvatar } from './PetAvatar';
@@ -19,6 +20,7 @@ import {
   scheduleLabel,
   suggestedRoutines,
   type Pet,
+  type PetMember,
   type PetTypeValue,
 } from '../../lib/pets';
 
@@ -28,6 +30,8 @@ type PetFormModalProps = {
   onSaved: () => void;
   houseId: string;
   userId: string;
+  /** Miembros del hogar, para elegir quién se encarga. */
+  members: PetMember[];
   /** Si se pasa, se edita esta mascota; si no, se crea una nueva. */
   pet: Pet | null;
 };
@@ -36,14 +40,16 @@ const isPetType = (v: string | null): v is PetTypeValue => PET_TYPES.some((t) =>
 
 /**
  * Nueva mascota (con sus rutinas de siempre ya propuestas según el tipo) o
- * editar su nombre y tipo.
+ * editar su nombre, tipo, foto y quién se encarga (o si es del piso).
  */
-export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }: PetFormModalProps) {
+export function PetFormModal({ visible, onClose, onSaved, houseId, userId, members, pet }: PetFormModalProps) {
   const theme = useTheme();
   const editing = Boolean(pet);
 
   const [name, setName] = useState('');
   const [type, setType] = useState<PetTypeValue>('perro');
+  // Quién se encarga; null = del piso (de todos).
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   // Índices de las rutinas sugeridas que se crearán (todas marcadas al principio).
   const [picked, setPicked] = useState<Set<number>>(new Set());
   // Foto elegida (se sube al guardar) o petición de quitar la que tiene.
@@ -58,6 +64,7 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
     setName(pet?.name ?? '');
     const initialType = isPetType(pet?.type ?? null) ? (pet?.type as PetTypeValue) : 'perro';
     setType(initialType);
+    setOwnerId(pet?.owner_id ?? null);
     setPicked(new Set(suggestedRoutines(initialType).map((_, i) => i)));
     setPhotoAsset(null);
     setRemovePhoto(false);
@@ -110,11 +117,11 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
     try {
       let petId: string;
       if (pet) {
-        const { error } = await supabase.from('pets').update({ name: trimmed, type }).eq('id', pet.id);
+        const { error } = await supabase.from('pets').update({ name: trimmed, type, owner_id: ownerId }).eq('id', pet.id);
         if (error) { Alert.alert('No se pudo guardar', error.message); return; }
         petId = pet.id;
       } else {
-        const { data, error } = await supabase.from('pets').insert({ house_id: houseId, name: trimmed, type }).select('id').single();
+        const { data, error } = await supabase.from('pets').insert({ house_id: houseId, name: trimmed, type, owner_id: ownerId }).select('id').single();
         if (error || !data) { Alert.alert('No se pudo guardar la mascota', error?.message ?? ''); return; }
         const drafts = suggestions.filter((_, i) => picked.has(i));
         if (drafts.length > 0) {
@@ -236,6 +243,41 @@ export function PetFormModal({ visible, onClose, onSaved, houseId, userId, pet }
                 );
               })}
             </View>
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text variant="label" color="secondary">¿Quién se encarga?</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[{ user_id: null, name: 'Del piso', avatar_url: null }, ...members].map((m) => {
+                const on = ownerId === m.user_id;
+                return (
+                  <Pressable key={m.user_id ?? 'house'} onPress={() => setOwnerId(m.user_id)} accessibilityRole="button" accessibilityState={{ selected: on }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingLeft: m.user_id ? 4 : 12,
+                        paddingRight: 12,
+                        paddingVertical: m.user_id ? 4 : 8,
+                        borderRadius: theme.radii.pill,
+                        borderWidth: theme.borderWidth,
+                        borderColor: on ? theme.colors.outline : 'transparent',
+                        backgroundColor: on ? theme.colors.peach : theme.colors.surface,
+                      }}
+                    >
+                      {m.user_id ? <Avatar uri={m.avatar_url} name={m.name} size={26} /> : <Text style={{ fontSize: 16, lineHeight: 20 }}>🏠</Text>}
+                      <Text variant="label" color={on ? 'onFill' : 'secondary'}>{m.user_id === userId ? 'Yo' : m.name}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text variant="caption" color="secondary">
+              {ownerId
+                ? 'Los avisos de sus rutinas le llegan solo a esa persona. Todo el piso puede verlas y marcarlas.'
+                : 'Es de todos: los avisos de sus rutinas llegan a todo el piso.'}
+            </Text>
           </View>
 
           {!editing ? (

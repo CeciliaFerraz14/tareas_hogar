@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Circle, CheckCircle2, MoreHorizontal, Plus, X } from 'lucide-react-native';
+import { ArrowLeft, Bell, Check, Circle, CheckCircle2, MoreHorizontal, Plus } from 'lucide-react-native';
 import { Alert } from '../../../../lib/alert';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
-import { Input } from '../../../../components/ui/Input';
 import { PlusButton } from '../../../../components/ui/PlusButton';
 import { PetFormModal } from '../../../../components/pets/PetFormModal';
 import { RoutineFormModal } from '../../../../components/pets/RoutineFormModal';
-import { PetAvatar } from '../../../../components/pets/PetAvatar';
+import { PetItemFormModal } from '../../../../components/pets/PetItemFormModal';
+import { PackAvatar, PetAvatar } from '../../../../components/pets/PetAvatar';
 import { useAuthStore } from '../../../../store/authStore';
 import { useSyncActiveHouse } from '../../../../store/houseStore';
 import { supabase } from '../../../../lib/supabase';
@@ -19,21 +19,27 @@ import { subscribeToHouseTables } from '../../../../lib/realtime';
 import { useTheme } from '../../../../lib/theme';
 import { dateKey, shortDate } from '../../../../lib/tasks';
 import {
+  PET_ITEM_KINDS,
   agoLabel,
   currentOccurrences,
   lastLog,
   loadPetBoard,
   markDone,
   nextDate,
+  reminderLabel,
   scheduleLabel,
   type Occurrence,
   type Pet,
+  type PetItem,
+  type PetItemKind,
   type PetLog,
+  type PetMember,
   type PetRoutine,
+  type PetTarget,
 } from '../../../../lib/pets';
 
-/** Tareas de una vez (la tabla pet_tasks de antes): veterinario, comprar pienso… */
-type PetTask = { id: string; pet_id: string; title: string; status: 'pending' | 'done' };
+/** Orden de los apuntes dentro de cada tarjeta. */
+const ITEM_ORDER: PetItemKind[] = ['buy', 'todo', 'note'];
 
 export default function MascotasScreen() {
   const { id: houseId } = useLocalSearchParams<{ id: string }>();
@@ -45,32 +51,33 @@ export default function MascotasScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [routines, setRoutines] = useState<PetRoutine[]>([]);
   const [logs, setLogs] = useState<PetLog[]>([]);
-  const [tasks, setTasks] = useState<PetTask[]>([]);
-  const [names, setNames] = useState<Record<string, string>>({});
+  const [items, setItems] = useState<PetItem[]>([]);
+  const [members, setMembers] = useState<PetMember[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   // Reloj para que "hace 5 min" y lo atrasado se actualicen solos.
   const [now, setNow] = useState(() => new Date());
 
   // Formularios (lo abierto se guarda aparte de `…Open` para que se cierren con su animación).
   const [petForm, setPetForm] = useState<{ open: boolean; pet: Pet | null }>({ open: false, pet: null });
-  const [routineForm, setRoutineForm] = useState<{ open: boolean; pet: Pet | null; routine: PetRoutine | null }>({ open: false, pet: null, routine: null });
-  const [taskForm, setTaskForm] = useState<{ open: boolean; pet: Pet | null }>({ open: false, pet: null });
+  const [routineForm, setRoutineForm] = useState<{ open: boolean; target: PetTarget; routine: PetRoutine | null }>({ open: false, target: null, routine: null });
+  const [itemForm, setItemForm] = useState<{ open: boolean; kind: PetItemKind; target: PetTarget; item: PetItem | null }>({ open: false, kind: 'todo', target: null, item: null });
 
   const loadData = useCallback(async () => {
     if (!houseId) return;
     try {
-      const board = await loadPetBoard(houseId);
+      const [board, membersRes] = await Promise.all([
+        loadPetBoard(houseId),
+        supabase.from('house_members').select('user_id, users:user_id (username, email, avatar_url)').eq('house_id', houseId).order('joined_at'),
+      ]);
       setPets(board.pets);
       setRoutines(board.routines);
       setLogs(board.logs);
-      const [tasksRes, membersRes] = await Promise.all([
-        board.pets.length > 0
-          ? supabase.from('pet_tasks').select('id, pet_id, title, status').in('pet_id', board.pets.map((p) => p.id)).eq('status', 'pending').order('created_at')
-          : Promise.resolve({ data: [] }),
-        supabase.from('house_members').select('user_id, users:user_id (username, email)').eq('house_id', houseId),
-      ]);
-      setTasks((tasksRes.data ?? []) as PetTask[]);
-      setNames(Object.fromEntries((membersRes.data ?? []).map((m) => [m.user_id, m.users?.username?.trim() || m.users?.email.split('@')[0] || '—'])));
+      setItems(board.items);
+      setMembers((membersRes.data ?? []).map((m) => ({
+        user_id: m.user_id,
+        name: m.users?.username?.trim() || m.users?.email.split('@')[0] || '—',
+        avatar_url: m.users?.avatar_url ?? null,
+      })));
       setNow(new Date());
     } catch (e) {
       Alert.alert('Error al cargar las mascotas', e instanceof Error ? e.message : String(e));
@@ -86,20 +93,20 @@ export default function MascotasScreen() {
   // Tiempo real: lo que marca uno lo ven los demás al momento.
   useEffect(() => {
     if (!houseId) return;
-    return subscribeToHouseTables(houseId, ['pets', 'pet_routines', 'pet_logs'], () => { void loadData(); });
+    return subscribeToHouseTables(houseId, ['pets', 'pet_routines', 'pet_logs', 'pet_items'], () => { void loadData(); });
   }, [houseId, loadData]);
 
   async function handleRefresh() { setRefreshing(true); await loadData(); setRefreshing(false); }
 
-  const nameOf = (id: string | null) => (id === user?.id ? 'Tú' : (id && names[id]) || 'Alguien');
+  const nameOf = (id: string | null) => (id === user?.id ? 'Tú' : (id && members.find((m) => m.user_id === id)?.name) || 'Alguien');
 
-  async function toggleOccurrence(occ: Occurrence, petName: string) {
+  async function toggleOccurrence(occ: Occurrence, who: string) {
     if (!houseId || !user) return;
     if (occ.log) {
       const log = occ.log;
       Alert.alert(
         'Desmarcar',
-        `${nameOf(log.done_by)} ${log.done_by === user.id ? 'lo marcaste' : 'lo marcó'} ${agoLabel(log.done_at, now)}. ¿Quitar la marca de «${occ.routine.title}» de ${petName}?`,
+        `${nameOf(log.done_by)} ${log.done_by === user.id ? 'lo marcaste' : 'lo marcó'} ${agoLabel(log.done_at, now)}. ¿Quitar la marca de «${occ.routine.title}» de ${who}?`,
         [
           { text: 'Cancelar', style: 'cancel' },
           {
@@ -137,11 +144,32 @@ export default function MascotasScreen() {
     void loadData();
   }
 
-  async function toggleTask(task: PetTask) {
-    setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    const { error } = await supabase.from('pet_tasks').update({ status: 'done' }).eq('id', task.id);
+  /** Tachar o destachar un pendiente o algo de la compra. */
+  async function toggleItem(item: PetItem) {
+    if (!user) return;
+    const done = !item.done;
+    const fields = { done, done_by: done ? user.id : null, done_at: done ? new Date().toISOString() : null };
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...fields } : i)));
+    const { error } = await supabase.from('pet_items').update(fields).eq('id', item.id);
     if (error) { Alert.alert('No se pudo actualizar', error.message); void loadData(); }
   }
+
+  // La manada sale con dos mascotas o más (o si ya tiene cosas suyas).
+  const packRoutines = routines.filter((r) => r.pet_id === null);
+  const packItems = items.filter((i) => i.pet_id === null);
+  const showPack = pets.length >= 2 || packRoutines.length > 0 || packItems.length > 0;
+
+  const groupProps = (target: PetTarget, who: string) => ({
+    logs,
+    now,
+    nameOf,
+    onToggle: (occ: Occurrence) => void toggleOccurrence(occ, who),
+    onAddRoutine: () => setRoutineForm({ open: true, target, routine: null }),
+    onEditRoutine: (routine: PetRoutine) => setRoutineForm({ open: true, target, routine }),
+    onAddItem: (kind: PetItemKind) => setItemForm({ open: true, kind, target, item: null }),
+    onEditItem: (item: PetItem) => setItemForm({ open: true, kind: item.kind, target, item }),
+    onToggleItem: (item: PetItem) => void toggleItem(item),
+  });
 
   return (
     <Screen contentStyle={{ padding: 0, gap: 0 }}>
@@ -165,28 +193,42 @@ export default function MascotasScreen() {
             <Text style={{ fontSize: 56, lineHeight: 64 }}>🐾</Text>
             <Text variant="heading">Aún no hay mascotas</Text>
             <Text variant="body" align="center">
-              Añade las mascotas del piso y sus rutinas (comida, paseos, arena…) para saber siempre si ya están hechas.
+              Añade las mascotas del piso, quién se encarga de cada una y sus rutinas (comida, arena…) para saber siempre si ya están hechas.
             </Text>
             <Button title="Añadir mascota" fullWidth={false} onPress={() => setPetForm({ open: true, pet: null })} />
           </View>
         ) : (
-          pets.map((pet) => (
-            <PetCard
-              key={pet.id}
-              pet={pet}
-              routines={routines.filter((r) => r.pet_id === pet.id)}
-              logs={logs}
-              tasks={tasks.filter((t) => t.pet_id === pet.id)}
-              now={now}
-              nameOf={nameOf}
-              onToggle={(occ) => void toggleOccurrence(occ, pet.name)}
-              onEditPet={() => setPetForm({ open: true, pet })}
-              onAddRoutine={() => setRoutineForm({ open: true, pet, routine: null })}
-              onEditRoutine={(routine) => setRoutineForm({ open: true, pet, routine })}
-              onAddTask={() => setTaskForm({ open: true, pet })}
-              onDoneTask={(task) => void toggleTask(task)}
-            />
-          ))
+          <>
+            {showPack ? (
+              <GroupCard
+                avatar={<PackAvatar pets={pets} size={56} />}
+                title="La manada"
+                subtitle={`Lo de ${pets.length === 2 ? `${pets[0].name} y ${pets[1].name}` : 'todas'}: areneros, pienso…`}
+                routines={packRoutines}
+                items={packItems}
+                {...groupProps(null, 'la manada')}
+              />
+            ) : null}
+            {pets.map((pet) => {
+              const owner = pet.owner_id ? (pet.owner_id === user?.id ? 'Tuya' : `De ${nameOf(pet.owner_id)}`) : 'Del piso';
+              return (
+                <GroupCard
+                  key={pet.id}
+                  avatar={(
+                    <Pressable onPress={() => setPetForm({ open: true, pet })} accessibilityRole="button" accessibilityLabel={pet.photo_url ? `Foto de ${pet.name}` : `Añadir foto a ${pet.name}`} style={{ borderRadius: 30, ...theme.shadows.small }}>
+                      <PetAvatar photoUrl={pet.photo_url} type={pet.type} size={56} />
+                    </Pressable>
+                  )}
+                  title={pet.name}
+                  owner={owner}
+                  onEdit={() => setPetForm({ open: true, pet })}
+                  routines={routines.filter((r) => r.pet_id === pet.id)}
+                  items={items.filter((i) => i.pet_id === pet.id)}
+                  {...groupProps(pet.id, pet.name)}
+                />
+              );
+            })}
+          </>
         )}
       </ScrollView>
 
@@ -198,31 +240,30 @@ export default function MascotasScreen() {
             onSaved={() => void loadData()}
             houseId={houseId}
             userId={user.id}
+            members={members}
             pet={petForm.pet}
           />
-          {routineForm.pet ? (
-            <RoutineFormModal
-              visible={routineForm.open}
-              onClose={() => setRoutineForm((f) => ({ ...f, open: false }))}
-              onSaved={() => void loadData()}
-              houseId={houseId}
-              userId={user.id}
-              petId={routineForm.pet.id}
-              petName={routineForm.pet.name}
-              routine={routineForm.routine}
-            />
-          ) : null}
-          <TaskFormModal
-            visible={taskForm.open}
-            petName={taskForm.pet?.name ?? ''}
-            onClose={() => setTaskForm((f) => ({ ...f, open: false }))}
-            onSave={async (title) => {
-              if (!taskForm.pet) return false;
-              const { error } = await supabase.from('pet_tasks').insert({ pet_id: taskForm.pet.id, title, assigned_to: null });
-              if (error) { Alert.alert('No se pudo guardar', error.message); return false; }
-              void loadData();
-              return true;
-            }}
+          <RoutineFormModal
+            visible={routineForm.open}
+            onClose={() => setRoutineForm((f) => ({ ...f, open: false }))}
+            onSaved={() => void loadData()}
+            houseId={houseId}
+            userId={user.id}
+            pets={pets}
+            members={members}
+            target={routineForm.target}
+            routine={routineForm.routine}
+          />
+          <PetItemFormModal
+            visible={itemForm.open}
+            onClose={() => setItemForm((f) => ({ ...f, open: false }))}
+            onSaved={() => void loadData()}
+            houseId={houseId}
+            userId={user.id}
+            pets={pets}
+            kind={itemForm.kind}
+            target={itemForm.target}
+            item={itemForm.item}
           />
         </>
       ) : null}
@@ -230,63 +271,86 @@ export default function MascotasScreen() {
   );
 }
 
-type PetCardProps = {
-  pet: Pet;
+type GroupCardProps = {
+  avatar: ReactNode;
+  title: string;
+  /** 'Tuya' · 'De Ana' · 'Del piso' (solo las mascotas). */
+  owner?: string;
+  subtitle?: string;
+  onEdit?: () => void;
   routines: PetRoutine[];
+  items: PetItem[];
   logs: PetLog[];
-  tasks: PetTask[];
   now: Date;
   nameOf: (id: string | null) => string;
   onToggle: (occ: Occurrence) => void;
-  onEditPet: () => void;
   onAddRoutine: () => void;
   onEditRoutine: (routine: PetRoutine) => void;
-  onAddTask: () => void;
-  onDoneTask: (task: PetTask) => void;
+  onAddItem: (kind: PetItemKind) => void;
+  onEditItem: (item: PetItem) => void;
+  onToggleItem: (item: PetItem) => void;
 };
 
-function PetCard({ pet, routines, logs, tasks, now, nameOf, onToggle, onEditPet, onAddRoutine, onEditRoutine, onAddTask, onDoneTask }: PetCardProps) {
+/** Tarjeta de una mascota o de la manada: rutinas, compra, pendientes y notas. */
+function GroupCard({
+  avatar, title, owner, subtitle, onEdit, routines, items, logs, now, nameOf,
+  onToggle, onAddRoutine, onEditRoutine, onAddItem, onEditItem, onToggleItem,
+}: GroupCardProps) {
   const theme = useTheme();
   const pendingNow = routines
     .flatMap((r) => currentOccurrences(r, logs, now))
     .filter((o) => !o.log && (o.late || o.routine.frequency !== 'daily')).length;
+  const status = pendingNow === 0 ? 'Todo al día' : pendingNow === 1 ? '1 cosa por hacer' : `${pendingNow} cosas por hacer`;
 
   return (
     <Card padded={false} style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: theme.spacing.md }}>
-        <Pressable onPress={onEditPet} accessibilityRole="button" accessibilityLabel={pet.photo_url ? `Foto de ${pet.name}` : `Añadir foto a ${pet.name}`} style={{ borderRadius: 30, ...theme.shadows.small }}>
-          <PetAvatar photoUrl={pet.photo_url} type={pet.type} size={56} />
-        </Pressable>
+        {avatar}
         <View style={{ flex: 1 }}>
-          <Text variant="heading">{pet.name}</Text>
-          <Text variant="caption" color="secondary">
-            {pendingNow === 0 ? 'Todo al día' : pendingNow === 1 ? '1 cosa por hacer' : `${pendingNow} cosas por hacer`}
-          </Text>
+          <Text variant="heading">{title}</Text>
+          {subtitle ? <Text variant="caption" color="secondary">{subtitle}</Text> : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {owner ? (
+              <View style={{ paddingHorizontal: 8, paddingVertical: 1, borderRadius: theme.radii.pill, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }}>
+                <Text variant="caption" color="secondary">{owner}</Text>
+              </View>
+            ) : null}
+            <Text variant="caption" color="secondary">{status}</Text>
+          </View>
         </View>
-        <Pressable onPress={onEditPet} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Editar ${pet.name}`}>
-          <MoreHorizontal size={22} color={theme.colors.textSecondary} />
-        </Pressable>
+        {onEdit ? (
+          <Pressable onPress={onEdit} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Editar ${title}`}>
+            <MoreHorizontal size={22} color={theme.colors.textSecondary} />
+          </Pressable>
+        ) : null}
       </View>
 
       {routines.map((routine) => (
         <RoutineRow key={routine.id} routine={routine} logs={logs} now={now} nameOf={nameOf} onToggle={onToggle} onEdit={() => onEditRoutine(routine)} />
       ))}
 
-      {tasks.length > 0 ? (
-        <View style={{ paddingHorizontal: theme.spacing.md, gap: 4, marginTop: 4 }}>
-          <Text variant="label" color="secondary">Pendientes</Text>
-          {tasks.map((task) => (
-            <Pressable key={task.id} onPress={() => onDoneTask(task)} accessibilityRole="checkbox" accessibilityState={{ checked: false }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
-              <Circle size={22} color={theme.colors.border} />
-              <Text variant="body" style={{ flex: 1 }}>{task.title}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+      {ITEM_ORDER.map((kind) => {
+        const list = items.filter((i) => i.kind === kind);
+        if (list.length === 0) return null;
+        return (
+          <View key={kind} style={{ paddingHorizontal: theme.spacing.md, gap: 2, marginTop: 4 }}>
+            <Text variant="label" color="secondary">{PET_ITEM_KINDS[kind].title}</Text>
+            {list.map((item) =>
+              kind === 'note' ? (
+                <NoteRow key={item.id} item={item} nameOf={nameOf} onEdit={() => onEditItem(item)} />
+              ) : (
+                <ItemRow key={item.id} item={item} nameOf={nameOf} onToggle={() => onToggleItem(item)} onEdit={() => onEditItem(item)} />
+              ),
+            )}
+          </View>
+        );
+      })}
 
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: theme.spacing.md, marginTop: 4 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: theme.spacing.md, marginTop: 4 }}>
         <DashedButton label="Rutina" onPress={onAddRoutine} />
-        <DashedButton label="Pendiente" onPress={onAddTask} />
+        {ITEM_ORDER.map((kind) => (
+          <DashedButton key={kind} label={PET_ITEM_KINDS[kind].label} onPress={() => onAddItem(kind)} />
+        ))}
       </View>
     </Card>
   );
@@ -307,10 +371,11 @@ function RoutineRow({ routine, logs, now, nameOf, onToggle, onEdit }: RoutineRow
   const last = lastLog(routine.id, logs);
   const allDone = occurrences.length > 0 && occurrences.every((o) => o.log);
   const next = routine.frequency !== 'daily' ? nextDate(routine, now) : null;
+  const reminder = reminderLabel(routine);
 
   let footer = last ? `Última vez ${agoLabel(last.done_at, now)} · ${nameOf(last.done_by)}` : 'Aún sin hacer';
   if (routine.frequency !== 'daily' && next && (allDone || occurrences.length === 0)) {
-    footer += ` · Próxima: ${next.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() ? 'hoy' : shortDate(dateKey(next))}`;
+    footer += ` · Próxima: ${dateKey(next) === dateKey(now) ? 'hoy' : shortDate(dateKey(next))}`;
   }
 
   return (
@@ -319,7 +384,15 @@ function RoutineRow({ routine, logs, now, nameOf, onToggle, onEdit }: RoutineRow
         <Text style={{ fontSize: 20, lineHeight: 26 }}>{routine.emoji}</Text>
         <View style={{ flex: 1 }}>
           <Text variant="bodyBold">{routine.title}</Text>
-          <Text variant="caption" color="secondary">{scheduleLabel(routine)}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text variant="caption" color="secondary">{scheduleLabel(routine)}</Text>
+            {reminder ? (
+              <>
+                <Bell size={11} color={theme.colors.textSecondary} />
+                {routine.frequency !== 'daily' ? <Text variant="caption" color="secondary">{routine.remind_at}</Text> : null}
+              </>
+            ) : null}
+          </View>
         </View>
       </Pressable>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -364,6 +437,45 @@ function OccurrenceChip({ occ, nameOf, onPress }: { occ: Occurrence; nameOf: (id
   );
 }
 
+/** Pendiente o compra: el círculo lo tacha; el texto lo abre para editar. */
+function ItemRow({ item, nameOf, onToggle, onEdit }: { item: PetItem; nameOf: (id: string | null) => string; onToggle: () => void; onEdit: () => void }) {
+  const theme = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Pressable onPress={onToggle} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: item.done }} accessibilityLabel={item.title} style={{ paddingVertical: 6 }}>
+        {item.done ? <CheckCircle2 size={22} color={theme.colors.success} /> : <Circle size={22} color={theme.colors.border} />}
+      </Pressable>
+      <Pressable onPress={onEdit} accessibilityRole="button" accessibilityHint="Editar" style={{ flex: 1, paddingVertical: 6 }}>
+        <Text variant="body" color={item.done ? 'secondary' : undefined} style={item.done ? { textDecorationLine: 'line-through' } : undefined}>{item.title}</Text>
+        {item.done ? <Text variant="caption" color="secondary">{`${nameOf(item.done_by)}${item.kind === 'buy' ? ' lo compró' : ' lo hizo'}`}</Text> : null}
+      </Pressable>
+    </View>
+  );
+}
+
+function NoteRow({ item, nameOf, onEdit }: { item: PetItem; nameOf: (id: string | null) => string; onEdit: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onEdit}
+      accessibilityRole="button"
+      accessibilityHint="Editar nota"
+      style={({ pressed }) => ({
+        padding: 10,
+        marginVertical: 3,
+        gap: 2,
+        borderRadius: theme.radii.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: pressed ? theme.colors.surfaceAlt : theme.colors.background,
+      })}
+    >
+      <Text variant="body">{item.title}</Text>
+      <Text variant="caption" color="secondary">{`${item.created_by ? nameOf(item.created_by) : 'Apuntada'} · ${shortDate(dateKey(new Date(item.created_at)))}`}</Text>
+    </Pressable>
+  );
+}
+
 function DashedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const theme = useTheme();
   return (
@@ -387,44 +499,5 @@ function DashedButton({ label, onPress }: { label: string; onPress: () => void }
       <Plus size={14} color={theme.colors.textSecondary} />
       <Text variant="label" color="secondary">{label}</Text>
     </Pressable>
-  );
-}
-
-/** Pendiente de una vez (veterinario, comprar pienso…). */
-function TaskFormModal({ visible, petName, onClose, onSave }: { visible: boolean; petName: string; onClose: () => void; onSave: (title: string) => Promise<boolean> }) {
-  const theme = useTheme();
-  const [title, setTitle] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { if (visible) setTitle(''); }, [visible]);
-
-  async function save() {
-    const trimmed = title.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    const ok = await onSave(trimmed);
-    setSaving(false);
-    if (ok) onClose();
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={onClose} />
-        <View style={{ backgroundColor: theme.colors.background, borderTopLeftRadius: theme.radii.xl, borderTopRightRadius: theme.radii.xl, padding: theme.spacing.lg, paddingBottom: 36, gap: theme.spacing.lg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
-              <Text variant="heading">Nuevo pendiente</Text>
-              <Text variant="caption" color="secondary">{petName} · algo de una sola vez</Text>
-            </View>
-            <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Cerrar">
-              <X size={22} color={theme.colors.textSecondary} />
-            </Pressable>
-          </View>
-          <Input placeholder="Ej. Veterinario el jueves, comprar pienso…" value={title} onChangeText={setTitle} autoFocus maxLength={120} returnKeyType="done" onSubmitEditing={save} />
-          <Button title="Añadir" loading={saving} onPress={save} />
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
   );
 }

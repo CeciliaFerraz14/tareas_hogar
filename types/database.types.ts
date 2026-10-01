@@ -471,6 +471,7 @@ export type Database = {
           chat: boolean
           expenses: boolean
           menu: boolean
+          pets: boolean
           shopping: boolean
           tasks: boolean
           updated_at: string
@@ -480,6 +481,7 @@ export type Database = {
           chat?: boolean
           expenses?: boolean
           menu?: boolean
+          pets?: boolean
           shopping?: boolean
           tasks?: boolean
           updated_at?: string
@@ -489,6 +491,7 @@ export type Database = {
           chat?: boolean
           expenses?: boolean
           menu?: boolean
+          pets?: boolean
           shopping?: boolean
           tasks?: boolean
           updated_at?: string
@@ -501,6 +504,77 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done: boolean
+          done_at: string | null
+          done_by: string | null
+          house_id: string
+          id: string
+          kind: string
+          pet_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          house_id: string
+          id?: string
+          kind: string
+          pet_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done?: boolean
+          done_at?: string | null
+          done_by?: string | null
+          house_id?: string
+          id?: string
+          kind?: string
+          pet_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_items_done_by_fkey"
+            columns: ["done_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_items_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_items_pet_same_house"
+            columns: ["pet_id", "house_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id", "house_id"]
           },
         ]
       }
@@ -566,11 +640,14 @@ export type Database = {
           id: string
           interval_days: number | null
           month_day: number | null
-          pet_id: string
+          pet_id: string | null
           position: number
+          remind: boolean
+          remind_at: string
           start_date: string
           times: string[] | null
           title: string
+          week_days: number[] | null
         }
         Insert: {
           created_at?: string
@@ -581,11 +658,14 @@ export type Database = {
           id?: string
           interval_days?: number | null
           month_day?: number | null
-          pet_id: string
+          pet_id?: string | null
           position?: number
+          remind?: boolean
+          remind_at?: string
           start_date?: string
           times?: string[] | null
           title: string
+          week_days?: number[] | null
         }
         Update: {
           created_at?: string
@@ -596,11 +676,14 @@ export type Database = {
           id?: string
           interval_days?: number | null
           month_day?: number | null
-          pet_id?: string
+          pet_id?: string | null
           position?: number
+          remind?: boolean
+          remind_at?: string
           start_date?: string
           times?: string[] | null
           title?: string
+          week_days?: number[] | null
         }
         Relationships: [
           {
@@ -677,6 +760,7 @@ export type Database = {
           house_id: string
           id: string
           name: string
+          owner_id: string | null
           photo_url: string | null
           type: string | null
         }
@@ -685,6 +769,7 @@ export type Database = {
           house_id: string
           id?: string
           name: string
+          owner_id?: string | null
           photo_url?: string | null
           type?: string | null
         }
@@ -693,6 +778,7 @@ export type Database = {
           house_id?: string
           id?: string
           name?: string
+          owner_id?: string | null
           photo_url?: string | null
           type?: string | null
         }
@@ -703,6 +789,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "houses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pets_owner_member"
+            columns: ["house_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "house_members"
+            referencedColumns: ["house_id", "user_id"]
           },
         ]
       }

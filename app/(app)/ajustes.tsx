@@ -25,6 +25,7 @@ import {
   Sparkles,
   Trash2,
   UtensilsCrossed,
+  PawPrint,
   Wallet,
 } from 'lucide-react-native';
 import { Screen } from '../../components/ui/Screen';
@@ -46,9 +47,9 @@ import { chooseImageSource, pickSquareImage, uploadPublicImage, type ImageSource
 import { useTheme } from '../../lib/theme';
 
 /** De qué avisar. Se guarda en notification_prefs: lo lee la Edge Function send-push. */
-type NotifCategories = { tasks: boolean; chat: boolean; expenses: boolean; shopping: boolean; menu: boolean };
+type NotifCategories = { tasks: boolean; chat: boolean; expenses: boolean; shopping: boolean; menu: boolean; pets: boolean };
 
-const ALL_ON: NotifCategories = { tasks: true, chat: true, expenses: true, shopping: true, menu: true };
+const ALL_ON: NotifCategories = { tasks: true, chat: true, expenses: true, shopping: true, menu: true, pets: true };
 
 /** En la app nativa, el interruptor general solo se recuerda en el móvil. */
 function nativeNotifKey(userId: string) {
@@ -88,7 +89,7 @@ export default function SettingsScreen() {
 
     const { data: prefsRow } = await supabase
       .from('notification_prefs')
-      .select('tasks, chat, expenses, shopping, menu')
+      .select('tasks, chat, expenses, shopping, menu, pets')
       .eq('user_id', user.id)
       .maybeSingle();
     setCategories(prefsRow ?? ALL_ON);
@@ -356,6 +357,12 @@ export default function SettingsScreen() {
               Icon={UtensilsCrossed}
               label="Menú: cuando te toca cocinar"
               right={sw(categories.menu, (v) => void toggleCategory('menu', v))}
+              indent
+            />
+            <SettingsRow
+              Icon={PawPrint}
+              label="Mascotas: cuando toca una rutina"
+              right={sw(categories.pets, (v) => void toggleCategory('pets', v))}
               indent
               last
             />

@@ -9,6 +9,28 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.18.0-beta] – 2026-10-01
+
+### Añadido
+- **Quién se encarga**: cada mascota puede tener una persona responsable
+  («Tuya», «De Ana») o ser **del piso**. Todo el piso la ve y puede marcar sus
+  cosas; lo que cambia es a quién le llegan los avisos.
+- **La manada**: con dos mascotas o más sale una tarjeta para lo que es de
+  todas (limpiar los areneros, comprar arena…). Rutinas, compras, pendientes y
+  notas pueden ir a la manada o a una mascota concreta.
+- **Rutinas semanales**: «Unos días de la semana», como el calendario del
+  hogar (p. ej. limpiar areneros cada lunes).
+- **Avisos de las rutinas**: si nadie la ha marcado cuando toca, llega una
+  notificación (las diarias, a cada hora; las demás, a la hora elegida). Va a
+  quien se encarga o, si alguna mascota es del piso, a todo el piso. Se puede
+  apagar en Ajustes → Notificaciones → Mascotas.
+- **Para comprar** y **Notas** de las mascotas, además de los pendientes. Lo
+  tachado se ve tachado un día, por si fue sin querer.
+
+### Quitado
+- Los paseos de los perros: ya no se proponen al crear un perro ni está el
+  icono del paseo.
+
 ## [0.17.0-beta] – 2026-10-01
 
 ### Añadido

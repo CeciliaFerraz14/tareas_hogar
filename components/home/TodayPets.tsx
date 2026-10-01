@@ -8,7 +8,7 @@ import { SectionTitle } from '../ui/Labels';
 import { subscribeToHouseTables } from '../../lib/realtime';
 import { useTheme } from '../../lib/theme';
 import { currentOccurrences, loadPetBoard, markDone, type Occurrence, type Pet, type PetLog, type PetRoutine } from '../../lib/pets';
-import { PetAvatar } from '../pets/PetAvatar';
+import { PackAvatar, PetAvatar } from '../pets/PetAvatar';
 
 type TodayPetsProps = {
   houseId: string;
@@ -78,14 +78,16 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
           </View>
         ) : (
           pending.map((occ) => {
-            const pet = petById.get(occ.routine.pet_id);
+            // Sin pet_id: es de la manada.
+            const pet = occ.routine.pet_id ? petById.get(occ.routine.pet_id) : undefined;
+            const who = occ.routine.pet_id ? (pet?.name ?? '') : 'La manada';
             return (
               <Pressable
                 key={`${occ.routine.id}-${occ.forDate}-${occ.slot}`}
                 onPress={() => void mark(occ)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: false }}
-                accessibilityLabel={`${pet?.name ?? ''}: ${occ.routine.title}, ${occ.label}`}
+                accessibilityLabel={`${who}: ${occ.routine.title}, ${occ.label}`}
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -109,10 +111,10 @@ export function TodayPets({ houseId, userId, onOpenPets }: TodayPetsProps) {
                 >
                   <Check size={14} color={theme.colors.border} strokeWidth={3} />
                 </View>
-                <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} />
+                {occ.routine.pet_id ? <PetAvatar photoUrl={pet?.photo_url ?? null} type={pet?.type ?? null} size={30} /> : <PackAvatar pets={pets} size={30} />}
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyBold" numberOfLines={1}>{`${occ.routine.emoji} ${occ.routine.title}`}</Text>
-                  <Text variant="caption" color="secondary">{pet?.name}</Text>
+                  <Text variant="caption" color="secondary">{who}</Text>
                 </View>
                 <View
                   style={{

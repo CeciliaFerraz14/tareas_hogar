@@ -13,7 +13,8 @@ export type HouseBroadcastTable =
   | 'recipes'
   | 'pets'
   | 'pet_routines'
-  | 'pet_logs';
+  | 'pet_logs'
+  | 'pet_items';
 
 /** Lo que publica realtime.broadcast_changes en cada cambio. */
 export type HouseChange = {

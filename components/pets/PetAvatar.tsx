@@ -30,3 +30,20 @@ export function PetAvatar({ photoUrl, type, size = 52 }: PetAvatarProps) {
     </View>
   );
 }
+
+/** La manada: las fotos de las mascotas montadas unas sobre otras (hasta 3). */
+export function PackAvatar({ pets, size = 52 }: { pets: { id: string; photo_url: string | null; type: string | null }[]; size?: number }) {
+  const shown = pets.slice(0, 3);
+  if (shown.length <= 1) return <PetAvatar photoUrl={shown[0]?.photo_url ?? null} type={shown[0]?.type ?? null} size={size} />;
+  const small = Math.round(size * 0.72);
+  const step = (size - small) / (shown.length - 1);
+  return (
+    <View style={{ width: size, height: size }}>
+      {shown.map((p, i) => (
+        <View key={p.id} style={{ position: 'absolute', left: i * step, top: i % 2 === 0 ? 0 : size - small }}>
+          <PetAvatar photoUrl={p.photo_url} type={p.type} size={small} />
+        </View>
+      ))}
+    </View>
+  );
+}
