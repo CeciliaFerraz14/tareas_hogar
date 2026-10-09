@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import {
   BookOpen,
   ChevronRight,
+  Lightbulb,
   PawPrint,
   Sparkles,
   Users,
@@ -14,6 +15,7 @@ import {
 import { Screen } from '../../../components/ui/Screen';
 import { Text } from '../../../components/ui/Text';
 import { Avatar } from '../../../components/ui/Avatar';
+import { FeedbackModal } from '../../../components/feedback/FeedbackModal';
 import { HouseGate } from '../../../components/house/HouseGate';
 import { TabHeader } from '../../../components/house/HouseSwitcher';
 import { useTabBarSpace } from '../../../hooks/useTabBarSpace';
@@ -54,6 +56,7 @@ function MasScreen({ house }: { house: MyHouse }) {
   const [board, setBoard] = useState<Board>(EMPTY);
   const [me, setMe] = useState<{ name: string; avatar_url: string | null } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -158,8 +161,15 @@ function MasScreen({ house }: { house: MyHouse }) {
             subtitle="Vuelve a ver el tutorial"
             onPress={openTutorial}
           />
+          <Row
+            left={<Lightbulb size={22} color={theme.colors.accent} />}
+            title="Sugerencias y errores"
+            subtitle="Cuéntanos qué mejorarías o qué falla"
+            onPress={() => setFeedbackOpen(true)}
+          />
         </View>
       </ScrollView>
+      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </Screen>
   );
 }

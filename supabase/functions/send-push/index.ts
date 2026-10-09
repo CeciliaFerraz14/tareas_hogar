@@ -4,6 +4,8 @@
 // apuntarle otra persona y el mismo día a las 10 (recordatorio de pg_cron).
 // Y de las rutinas de las mascotas que tienen aviso, cuando tocan y nadie las ha
 // marcado (send_pet_reminders, pg_cron): a quien se encarga o a todo el hogar.
+// Las sugerencias y errores (tabla feedback) van a quien lleva HOMI
+// (private.app_admins, en record.recipient_ids), no al hogar.
 // La llaman los triggers de la base de datos (pg_net) con la cabecera
 // x-push-secret; no la llama la app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -12,6 +14,7 @@ import webpush from 'npm:web-push@3.6.7';
 type Kind = 'chat' | 'tasks' | 'shopping' | 'expenses' | 'menu' | 'pets';
 type Payload = { title: string; body: string; url: string; tag: string };
 type Row = Record<string, unknown>;
+type Subscription = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string };
 // 'created' = algo nuevo (por defecto). task_done y shopping_* los manda
 // private.enqueue_done_push; cook_assigned, enqueue_cook_push; cook_reminder,
 // send_cook_reminders (pg_cron); pet_reminder, send_pet_reminders (pg_cron).
@@ -103,6 +106,58 @@ function displayName(u: { username: string | null; email: string } | null): stri
   return u?.username?.trim() || u?.email?.split('@')[0] || 'Alguien';
 }
 
+/** Envía a cada navegador su aviso y borra los que ya no existen. */
+async function deliver(subs: Subscription[], payloadFor: (userId: string) => Payload, urgency: 'high' | 'normal') {
+  const results = await Promise.allSettled(
+    subs.map((s) =>
+      webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        JSON.stringify(payloadFor(s.user_id)),
+        { TTL: 24 * 60 * 60, urgency },
+      ),
+    ),
+  );
+
+  // Navegadores que ya no existen (desinstalada, permiso retirado…): se borran.
+  const gone = subs
+    .filter((_, i) => {
+      const r = results[i];
+      return r.status === 'rejected' && [404, 410].includes((r.reason as { statusCode?: number }).statusCode ?? 0);
+    })
+    .map((s) => s.id);
+  if (gone.length > 0) await admin.from('push_subscriptions').delete().in('id', gone);
+
+  const sent = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => String((r.reason as { statusCode?: number; body?: string }).statusCode ?? r.reason));
+  return json({ sent, removed: gone.length, failed });
+}
+
+/** Una sugerencia o un error nuevo: aviso a quien lleva HOMI. */
+async function sendFeedback(record: Row) {
+  const recipients = Array.isArray(record.recipient_ids) ? (record.recipient_ids as string[]) : [];
+  if (recipients.length === 0) return json({ sent: 0 });
+
+  const [authorRes, subsRes] = await Promise.all([
+    record.user_id
+      ? admin.from('users').select('username, email').eq('id', record.user_id as string).maybeSingle()
+      : Promise.resolve({ data: null }),
+    admin.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').in('user_id', recipients),
+  ]);
+  const subs = (subsRes.data ?? []) as Subscription[];
+  if (subs.length === 0) return json({ sent: 0 });
+
+  const author = displayName(authorRes.data as { username: string | null; email: string } | null);
+  const payload: Payload = {
+    title: record.kind === 'bug' ? '🐞 Nuevo error en HOMI' : '💡 Nueva sugerencia en HOMI',
+    body: `${author}: ${short(String(record.message ?? ''))}`,
+    url: '/',
+    tag: `feedback-${record.id}`,
+  };
+  return deliver(subs, () => payload, 'normal');
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
 
@@ -115,6 +170,8 @@ Deno.serve(async (req) => {
     event?: PushEvent;
     actor_id?: string;
   };
+  if (table === 'feedback') return sendFeedback(record);
+
   const kind = KIND_BY_TABLE[table];
   if (!kind) return json({ skipped: 'table' });
 
@@ -279,28 +336,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  const results = await Promise.allSettled(
-    subs.map((s) =>
-      webpush.sendNotification(
-        { endpoint: s.endpoint as string, keys: { p256dh: s.p256dh as string, auth: s.auth as string } },
-        JSON.stringify(payloadFor(s.user_id as string)),
-        { TTL: 24 * 60 * 60, urgency: kind === 'chat' ? 'high' : 'normal' },
-      ),
-    ),
-  );
-
-  // Navegadores que ya no existen (desinstalada, permiso retirado…): se borran.
-  const gone = subs
-    .filter((_, i) => {
-      const r = results[i];
-      return r.status === 'rejected' && [404, 410].includes((r.reason as { statusCode?: number }).statusCode ?? 0);
-    })
-    .map((s) => s.id as string);
-  if (gone.length > 0) await admin.from('push_subscriptions').delete().in('id', gone);
-
-  const sent = results.filter((r) => r.status === 'fulfilled').length;
-  const failed = results
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => String((r.reason as { statusCode?: number; body?: string }).statusCode ?? r.reason));
-  return json({ sent, removed: gone.length, failed });
+  return deliver(subs as Subscription[], payloadFor, kind === 'chat' ? 'high' : 'normal');
 });

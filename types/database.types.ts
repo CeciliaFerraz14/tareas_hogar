@@ -166,6 +166,47 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device: string | null
+          id: string
+          kind: string
+          message: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          kind: string
+          message: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          kind?: string
+          message?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       house_chat_reads: {
         Row: {
           delivered_at: string | null

@@ -9,6 +9,17 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.20.0-beta] – 2026-10-09
+
+### Añadido
+- **Sugerencias y errores**: en Más y en Ajustes → Ayuda se puede mandar una
+  sugerencia o avisar de algo que falla. Se envía con la versión de HOMI y el
+  modelo del móvil (o el navegador) para encontrar el fallo antes. Se leen en
+  la tabla `feedback` de Supabase; cada persona puede mandar hasta 10 por hora.
+- **Aviso de cada sugerencia**: quien lleva HOMI (tabla privada
+  `private.app_admins`) recibe una notificación con cada sugerencia o error
+  nuevo, con el nombre de quien la manda y el mensaje.
+
 ## [0.19.3-beta] – 2026-10-01
 
 ### Arreglado

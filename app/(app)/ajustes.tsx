@@ -18,6 +18,7 @@ import {
   CheckSquare,
   ChevronRight,
   KeyRound,
+  Lightbulb,
   LogOut,
   MessageCircle,
   ShoppingCart,
@@ -35,6 +36,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
+import { FeedbackModal } from '../../components/feedback/FeedbackModal';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { supabase } from '../../lib/supabase';
@@ -76,6 +78,7 @@ export default function SettingsScreen() {
   const [categories, setCategories] = useState<NotifCategories>(ALL_ON);
   const [pushState, setPushState] = useState<WebPushState | null>(null);
   const [sendingReset, setSendingReset] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -400,6 +403,12 @@ export default function SettingsScreen() {
           right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
           onPress={openTutorial}
           first={!showInstall}
+        />
+        <SettingsRow
+          Icon={Lightbulb}
+          label="Sugerencias y errores"
+          right={<ChevronRight size={18} color={theme.colors.textSecondary} />}
+          onPress={() => setFeedbackOpen(true)}
           last
         />
       </Card>
@@ -440,6 +449,8 @@ export default function SettingsScreen() {
       >
         {versionLabel()}
       </Text>
+
+      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       {/* ── edit name modal ── */}
       <Modal visible={editOpen} animationType="slide" transparent onRequestClose={() => setEditOpen(false)}>
