@@ -152,7 +152,7 @@ async function sendFeedback(record: Row) {
   const payload: Payload = {
     title: record.kind === 'bug' ? '🐞 Nuevo error en HOMI' : '💡 Nueva sugerencia en HOMI',
     body: `${author}: ${short(String(record.message ?? ''))}`,
-    url: '/',
+    url: '/buzon',
     tag: `feedback-${record.id}`,
   };
   return deliver(subs, () => payload, 'normal');

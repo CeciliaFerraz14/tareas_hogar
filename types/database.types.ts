@@ -1261,6 +1261,21 @@ export type Database = {
       create_house: { Args: { p_name: string }; Returns: string }
       get_push_config: { Args: never; Returns: Json }
       get_vapid_public_key: { Args: never; Returns: string }
+      is_app_admin: { Args: never; Returns: boolean }
+      list_feedback: {
+        Args: never
+        Returns: {
+          app_version: string | null
+          author_email: string | null
+          author_name: string | null
+          created_at: string
+          device: string | null
+          id: string
+          kind: string
+          message: string
+          status: string
+        }[]
+      }
       mark_chat_read: {
         Args: { p_house_id: string; p_up_to: string }
         Returns: undefined
@@ -1279,6 +1294,10 @@ export type Database = {
       }
       reorder_my_houses: {
         Args: { p_house_ids: string[] }
+        Returns: undefined
+      }
+      set_feedback_status: {
+        Args: { p_id: string; p_status: string }
         Returns: undefined
       }
       save_push_subscription: {

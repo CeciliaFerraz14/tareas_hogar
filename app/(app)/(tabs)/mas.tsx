@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import {
   BookOpen,
   ChevronRight,
+  Inbox,
   Lightbulb,
   PawPrint,
   Sparkles,
@@ -57,6 +58,8 @@ function MasScreen({ house }: { house: MyHouse }) {
   const [me, setMe] = useState<{ name: string; avatar_url: string | null } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  /** Sugerencias nuevas en el buzón; null si no llevas HOMI (no se enseña). */
+  const [inboxNew, setInboxNew] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -107,11 +110,18 @@ function MasScreen({ house }: { house: MyHouse }) {
     });
   }, [house.id, user]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const loadInbox = useCallback(async () => {
+    const { data: isAdmin } = await supabase.rpc('is_app_admin');
+    if (!isAdmin) { setInboxNew(null); return; }
+    const { data } = await supabase.rpc('list_feedback');
+    setInboxNew((data ?? []).filter((f) => f.status === 'new').length);
+  }, []);
+
+  useFocusEffect(useCallback(() => { void load(); void loadInbox(); }, [load, loadInbox]));
 
   async function handleRefresh() {
     setRefreshing(true);
-    await load();
+    await Promise.all([load(), loadInbox()]);
     setRefreshing(false);
   }
 
@@ -161,6 +171,14 @@ function MasScreen({ house }: { house: MyHouse }) {
             subtitle="Vuelve a ver el tutorial"
             onPress={openTutorial}
           />
+          {inboxNew !== null ? (
+            <Row
+              left={<Inbox size={22} color={theme.colors.accent} />}
+              title={inboxNew > 0 ? `Buzón · ${inboxNew} ${inboxNew === 1 ? 'nueva' : 'nuevas'}` : 'Buzón'}
+              subtitle="Las sugerencias y errores que te mandan"
+              onPress={() => go('/(app)/buzon')}
+            />
+          ) : null}
           <Row
             left={<Lightbulb size={22} color={theme.colors.accent} />}
             title="Sugerencias y errores"

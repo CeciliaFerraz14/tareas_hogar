@@ -9,6 +9,17 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.21.0-beta] – 2026-10-09
+
+### Añadido
+- **Buzón** (Más → Buzón, solo para quien lleva HOMI): todas las sugerencias y
+  errores con el mensaje entero, quién lo manda, la versión y el móvil. Se
+  marcan como vistas o hechas, y se filtran en Por mirar, Hechas y Todas.
+  La fila de Más dice cuántas hay nuevas.
+
+### Cambiado
+- Al tocar el aviso de una sugerencia nueva se abre el Buzón (antes, Hoy).
+
 ## [0.20.0-beta] – 2026-10-09
 
 ### Añadido
