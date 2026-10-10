@@ -1,16 +1,18 @@
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ArrowLeft, Bug, Inbox, Lightbulb } from 'lucide-react-native';
+import { ArrowLeft, Bell, Bug, Inbox, Lightbulb } from 'lucide-react-native';
 import { Screen } from '../../components/ui/Screen';
 import { Text } from '../../components/ui/Text';
 import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { Alert } from '../../lib/alert';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/theme';
 import type { Database } from '../../types/database.types';
 
-type FeedbackRow = Database['public']['Functions']['list_feedback']['Returns'][number];
+type FeedbackRow = Database['public']['Functions']['list_inbox']['Returns'][number];
 type Status = 'new' | 'seen' | 'done';
 type Filter = 'open' | 'done' | 'all';
 
@@ -53,9 +55,10 @@ export default function InboxScreen() {
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
   const [refreshing, setRefreshing] = useState(false);
+  const [closing, setClosing] = useState<FeedbackRow | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.rpc('list_feedback');
+    const { data, error } = await supabase.rpc('list_inbox');
     if (error) { Alert.alert('No se pudo cargar el buzón', error.message); return; }
     setItems(data ?? []);
   }, []);
@@ -76,6 +79,19 @@ export default function InboxScreen() {
       setItems(previous);
       Alert.alert('No se pudo guardar', error.message);
     }
+  }
+
+  /** «Hecha»: si aún no se ha avisado a quien la mandó, primero se pregunta qué se ha hecho. */
+  function markDone(item: FeedbackRow) {
+    if (item.has_author && !item.done_notified_at) setClosing(item);
+    else void setStatus(item.id, 'done');
+  }
+
+  async function closeAndNotify(item: FeedbackRow, reply: string) {
+    const { error } = await supabase.rpc('close_feedback', { p_id: item.id, p_reply: reply.trim() || undefined });
+    if (error) { Alert.alert('No se pudo guardar', error.message); return; }
+    setClosing(null);
+    void load();
   }
 
   const all = items ?? [];
@@ -127,8 +143,10 @@ export default function InboxScreen() {
       ) : null}
 
       {shown.map((f) => (
-        <FeedbackCard key={f.id} item={f} onStatus={(s) => void setStatus(f.id, s)} />
+        <FeedbackCard key={f.id} item={f} onStatus={(s) => (s === 'done' ? markDone(f) : void setStatus(f.id, s))} />
       ))}
+
+      <CloseModal item={closing} onClose={() => setClosing(null)} onConfirm={closeAndNotify} />
     </Screen>
   );
 }
@@ -174,6 +192,18 @@ function FeedbackCard({ item, onStatus }: { item: FeedbackRow; onStatus: (status
         {meta ? <Text variant="caption" color="secondary" selectable>{meta}</Text> : null}
       </View>
 
+      {item.done_notified_at || item.reply ? (
+        <View style={{ gap: 2, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
+          {item.done_notified_at ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Bell size={14} color={theme.colors.textSecondary} />
+              <Text variant="caption" color="secondary">Avisado el {when(item.done_notified_at)}</Text>
+            </View>
+          ) : null}
+          {item.reply ? <Text variant="caption" color="secondary" selectable>«{item.reply}»</Text> : null}
+        </View>
+      ) : null}
+
       <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
         {item.status === 'new' ? <StatusButton label="Vista" onPress={() => onStatus('seen')} /> : null}
         {item.status !== 'done' ? (
@@ -207,5 +237,73 @@ function StatusButton({ label, filled = false, onPress }: { label: string; fille
         </View>
       )}
     </Pressable>
+  );
+}
+
+/** Antes de cerrar una sugerencia: qué se ha hecho, para el aviso a quien la mandó. */
+function CloseModal({ item, onClose, onConfirm }: {
+  item: FeedbackRow | null;
+  onClose: () => void;
+  onConfirm: (item: FeedbackRow, reply: string) => Promise<void>;
+}) {
+  const theme = useTheme();
+  const [reply, setReply] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [shown, setShown] = useState<FeedbackRow | null>(null);
+  // Se queda con la última para que no se vacíe mientras se cierra.
+  if (item && item !== shown) { setShown(item); setReply(''); }
+  const f = item ?? shown;
+  if (!f) return null;
+
+  const isBug = f.kind === 'bug';
+  const author = f.author_name ?? f.author_email?.split('@')[0] ?? 'quien la mandó';
+  const title = isBug ? '🛠️ Arreglado lo que nos contaste' : '💡 Tu sugerencia ya está en HOMI';
+  const message = f.message.length > 90 ? `${f.message.slice(0, 89)}…` : f.message;
+  const body = `${reply.trim() || `«${message}»`} · ¡Gracias por contárnoslo!`;
+
+  async function confirm() {
+    if (!f) return;
+    setSaving(true);
+    try { await onConfirm(f, reply); } finally { setSaving(false); }
+  }
+
+  return (
+    <Modal visible={item !== null} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <Pressable style={{ flex: 1, minHeight: 60, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={onClose} />
+        <ScrollView
+          style={{ flexGrow: 0, maxHeight: '88%', backgroundColor: theme.colors.background, borderTopLeftRadius: theme.radii.xl, borderTopRightRadius: theme.radii.xl }}
+          contentContainerStyle={{ padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: 36 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.border, alignSelf: 'center' }} />
+          <View>
+            <Text variant="heading">{isBug ? 'Error arreglado' : 'Sugerencia hecha'}</Text>
+            <Text variant="caption" color="secondary">
+              A {author} le llega este aviso, si tiene las notificaciones de HOMI activadas.
+            </Text>
+          </View>
+
+          <Input
+            label="Qué se ha hecho (opcional)"
+            placeholder={isBug ? 'Ej. Ya se guardan bien las fotos' : 'Ej. Ya puedes apuntar los gastos fijos en la Hucha'}
+            value={reply}
+            onChangeText={setReply}
+            maxLength={300}
+            multiline
+            style={{ minHeight: 80, textAlignVertical: 'top' }}
+          />
+
+          <Card style={{ gap: 4 }}>
+            <Text variant="caption" color="secondary">Así le llegará</Text>
+            <Text variant="bodyBold">{title}</Text>
+            <Text variant="body">{body}</Text>
+          </Card>
+
+          <Button title="Marcar como hecha y avisar" loading={saving} onPress={confirm} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }

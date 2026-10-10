@@ -5,7 +5,8 @@
 // Y de las rutinas de las mascotas que tienen aviso, cuando tocan y nadie las ha
 // marcado (send_pet_reminders, pg_cron): a quien se encarga o a todo el hogar.
 // Las sugerencias y errores (tabla feedback) van a quien lleva HOMI
-// (private.app_admins, en record.recipient_ids), no al hogar.
+// (private.app_admins, en record.recipient_ids), no al hogar. Y al marcar una
+// como hecha desde el Buzón (event feedback_done), a quien la mandó.
 // La llaman los triggers de la base de datos (pg_net) con la cabecera
 // x-push-secret; no la llama la app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -25,7 +26,8 @@ type PushEvent =
   | 'shopping_finished'
   | 'cook_assigned'
   | 'cook_reminder'
-  | 'pet_reminder';
+  | 'pet_reminder'
+  | 'feedback_done';
 
 type ReminderMeal = { slot: string; title: string; eating: number };
 
@@ -158,6 +160,28 @@ async function sendFeedback(record: Row) {
   return deliver(subs, () => payload, 'normal');
 }
 
+/** Su sugerencia o su error ya está hecho: aviso a quien lo mandó. */
+async function sendFeedbackDone(record: Row) {
+  if (!record.user_id) return json({ sent: 0 });
+  const { data } = await admin
+    .from('push_subscriptions')
+    .select('id, user_id, endpoint, p256dh, auth')
+    .eq('user_id', record.user_id as string);
+  const subs = (data ?? []) as Subscription[];
+  if (subs.length === 0) return json({ sent: 0 });
+
+  const reply = String(record.reply ?? '').trim();
+  const payload: Payload = {
+    title: record.kind === 'bug' ? '🛠️ Arreglado lo que nos contaste' : '💡 Tu sugerencia ya está en HOMI',
+    body: reply
+      ? `${short(reply)} · ¡Gracias por contárnoslo!`
+      : `«${short(String(record.message ?? ''), 90)}» · ¡Gracias por contárnoslo!`,
+    url: '/',
+    tag: `feedback-done-${record.id}`,
+  };
+  return deliver(subs, () => payload, 'normal');
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
 
@@ -170,7 +194,7 @@ Deno.serve(async (req) => {
     event?: PushEvent;
     actor_id?: string;
   };
-  if (table === 'feedback') return sendFeedback(record);
+  if (table === 'feedback') return event === 'feedback_done' ? sendFeedbackDone(record) : sendFeedback(record);
 
   const kind = KIND_BY_TABLE[table];
   if (!kind) return json({ skipped: 'table' });

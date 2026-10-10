@@ -9,6 +9,16 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.23.0-beta] – 2026-10-10
+
+### Añadido
+- **Aviso al cerrar una sugerencia**: al marcar una sugerencia o un error como
+  hecho en el Buzón, quien lo mandó recibe una notificación («💡 Tu sugerencia
+  ya está en HOMI» o «🛠️ Arreglado lo que nos contaste»), con una nota opcional
+  de qué se ha hecho. Antes de enviarla se ve cómo le llegará. Solo se avisa
+  una vez: reabrirla y volver a cerrarla no repite el aviso.
+- En el Buzón, las tarjetas avisadas dicen cuándo se avisó y con qué nota.
+
 ## [0.22.0-beta] – 2026-10-10
 
 ### Añadido

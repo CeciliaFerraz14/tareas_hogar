@@ -171,9 +171,11 @@ export type Database = {
           app_version: string | null
           created_at: string
           device: string | null
+          done_notified_at: string | null
           id: string
           kind: string
           message: string
+          reply: string | null
           status: string
           user_id: string | null
         }
@@ -181,9 +183,11 @@ export type Database = {
           app_version?: string | null
           created_at?: string
           device?: string | null
+          done_notified_at?: string | null
           id?: string
           kind: string
           message: string
+          reply?: string | null
           status?: string
           user_id?: string | null
         }
@@ -191,9 +195,11 @@ export type Database = {
           app_version?: string | null
           created_at?: string
           device?: string | null
+          done_notified_at?: string | null
           id?: string
           kind?: string
           message?: string
+          reply?: string | null
           status?: string
           user_id?: string | null
         }
@@ -1298,6 +1304,10 @@ export type Database = {
           already_listed: number
         }[]
       }
+      close_feedback: {
+        Args: { p_id: string; p_reply?: string }
+        Returns: undefined
+      }
       copy_meal_week: {
         Args: { p_from: string; p_house_id: string; p_to: string }
         Returns: number
@@ -1327,6 +1337,23 @@ export type Database = {
           id: string
           kind: string
           message: string
+          status: string
+        }[]
+      }
+      list_inbox: {
+        Args: never
+        Returns: {
+          app_version: string | null
+          author_email: string | null
+          author_name: string | null
+          created_at: string
+          device: string | null
+          done_notified_at: string | null
+          has_author: boolean
+          id: string
+          kind: string
+          message: string
+          reply: string | null
           status: string
         }[]
       }
