@@ -971,6 +971,60 @@ export type Database = {
           },
         ]
       }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          house_id: string
+          id: string
+          period: string
+          title: string
+          updated_at: string
+          variable: boolean
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          house_id: string
+          id?: string
+          period?: string
+          title: string
+          updated_at?: string
+          variable?: boolean
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          house_id?: string
+          id?: string
+          period?: string
+          title?: string
+          updated_at?: string
+          variable?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_expenses_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           created_at: string

@@ -9,6 +9,19 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.22.0-beta] – 2026-10-10
+
+### Añadido
+- **Gastos fijos** (Hucha → Gastos fijos): alquiler, luz, gas, internet… con
+  cuánto y cada cuánto se pagan (cada mes, cada 2 o 3 meses, cada año). Arriba
+  sale lo que cuesta la casa al mes, al año y por persona. No se reparten ni
+  crean deudas: van aparte de los gastos compartidos. Los que cambian cada vez
+  (luz, gas, agua) cuentan como aproximados y se actualizan con cada factura.
+  Idea de una usuaria desde Sugerencias y errores.
+
+### Cambiado
+- Los importes de la Hucha llevan siempre punto de miles (1.200,00 €).
+
 ## [0.21.0-beta] – 2026-10-09
 
 ### Añadido

@@ -22,6 +22,8 @@ import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../lib/supabase';
 import { useTheme } from '../../../../lib/theme';
 import { useSyncActiveHouse } from '../../../../store/houseStore';
+import { RecurringExpenseFormModal } from '../../../../components/expenses/RecurringExpenseFormModal';
+import { CATEGORIES, PERIODS, formatEuros, monthlyAmount, type RecurringExpense } from '../../../../lib/recurringExpenses';
 
 type Member = {
   user_id: string;
@@ -50,9 +52,14 @@ type Expense = {
   splits: Split[];
 };
 
-function fmt(n: number) {
-  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const fmt = formatEuros;
+
+type Tab = 'shared' | 'fixed';
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'shared', label: 'Compartidos' },
+  { value: 'fixed', label: 'Gastos fijos' },
+];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -77,9 +84,13 @@ export default function HuchaScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
 
+  const [tab, setTab] = useState<Tab>('shared');
+  const [fixed, setFixed] = useState<RecurringExpense[]>([]);
+  const [fixedModal, setFixedModal] = useState<{ expense: RecurringExpense | null } | null>(null);
+
   const loadData = useCallback(async () => {
     if (!houseId) return;
-    const [expRes, memRes] = await Promise.all([
+    const [expRes, memRes, fixedRes] = await Promise.all([
       supabase
         .from('expenses')
         .select(`
@@ -96,7 +107,16 @@ export default function HuchaScreen() {
         .from('house_members')
         .select('user_id, users:user_id (email, username, avatar_url)')
         .eq('house_id', houseId),
+      supabase
+        .from('recurring_expenses')
+        .select('*')
+        .eq('house_id', houseId)
+        .order('created_at', { ascending: true }),
     ]);
+
+    if (fixedRes.data) {
+      setFixed(fixedRes.data.map((f) => ({ ...f, amount: Number(f.amount) }) as RecurringExpense));
+    }
 
     if (expRes.data) {
       setExpenses(
@@ -231,6 +251,32 @@ export default function HuchaScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />}
       >
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {TABS.map((t) => {
+            const on = tab === t.value;
+            return (
+              <Pressable key={t.value} onPress={() => setTab(t.value)} accessibilityRole="tab" accessibilityState={{ selected: on }}>
+                <View
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: theme.radii.pill,
+                    borderWidth: theme.borderWidth,
+                    borderColor: on ? theme.colors.outline : 'transparent',
+                    backgroundColor: on ? theme.colors.peach : theme.colors.surface,
+                  }}
+                >
+                  <Text variant="label" color={on ? 'onFill' : 'secondary'}>{t.label}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {tab === 'fixed' ? (
+          <FixedExpenses items={fixed} people={members.length} onEdit={(e) => setFixedModal({ expense: e })} />
+        ) : (
+        <>
         {/* my balance */}
         <Card>
           <View style={{ alignItems: 'center', gap: 4, paddingVertical: 8 }}>
@@ -341,12 +387,14 @@ export default function HuchaScreen() {
             })
           )}
         </View>
+        </>
+        )}
       </ScrollView>
 
       {/* FAB */}
       <View style={{ padding: theme.spacing.lg }}>
         <Pressable
-          onPress={openModal}
+          onPress={tab === 'fixed' ? () => setFixedModal({ expense: null }) : openModal}
           style={{
             backgroundColor: theme.colors.primary,
             borderRadius: theme.radii.pill,
@@ -355,9 +403,20 @@ export default function HuchaScreen() {
           }}
         >
           <Plus size={20} color="#fff" />
-          <Text variant="bodyBold" color="inverse">Añadir gasto</Text>
+          <Text variant="bodyBold" color="inverse">{tab === 'fixed' ? 'Añadir gasto fijo' : 'Añadir gasto'}</Text>
         </Pressable>
       </View>
+
+      {houseId && user ? (
+        <RecurringExpenseFormModal
+          visible={fixedModal !== null}
+          onClose={() => setFixedModal(null)}
+          onSaved={() => void loadData()}
+          houseId={houseId}
+          userId={user.id}
+          expense={fixedModal?.expense ?? null}
+        />
+      ) : null}
 
       {/* add expense modal */}
       <Modal visible={modalOpen} animationType="slide" transparent onRequestClose={() => setModalOpen(false)}>
@@ -439,5 +498,74 @@ export default function HuchaScreen() {
         </KeyboardAvoidingView>
       </Modal>
     </Screen>
+  );
+}
+
+/** Lo que cuesta la casa al mes: alquiler, luz, internet… Sin repartir ni deudas. */
+function FixedExpenses({ items, people, onEdit }: { items: RecurringExpense[]; people: number; onEdit: (e: RecurringExpense) => void }) {
+  const theme = useTheme();
+  const total = items.reduce((sum, e) => sum + monthlyAmount(e), 0);
+  const approx = items.some((e) => e.variable);
+  const tilde = approx ? '≈ ' : '';
+
+  return (
+    <>
+      <Card>
+        <View style={{ alignItems: 'center', gap: 4, paddingVertical: 8 }}>
+          <Text variant="label" color="secondary">La casa cuesta al mes</Text>
+          <Text variant="title">{tilde}{fmt(total)} €</Text>
+          <Text variant="caption" color="secondary" align="center">
+            {items.length === 0
+              ? 'Apunta el alquiler, la luz, internet…'
+              : `${tilde}${fmt(total * 12)} € al año${people > 1 ? ` · ${tilde}${fmt(total / people)} € por persona` : ''}`}
+          </Text>
+        </View>
+      </Card>
+
+      <View style={{ gap: 8 }}>
+        <SectionTitle>{`Gastos fijos (${items.length})`}</SectionTitle>
+        {items.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 32, gap: 4 }}>
+            <Text variant="bodyBold">Aún no hay gastos fijos.</Text>
+            <Text variant="caption" color="secondary" align="center">
+              Son solo para saber cuánto cuesta la casa: no se reparten ni crean deudas.
+            </Text>
+          </View>
+        ) : (
+          items.map((e) => {
+            const { Icon } = CATEGORIES[e.category] ?? CATEGORIES.other;
+            const monthly = monthlyAmount(e);
+            const detail = [
+              PERIODS[e.period]?.label ?? '',
+              e.period !== 'monthly' ? `${fmt(monthly)}\u00a0€/mes` : null,
+              e.variable ? 'aproximado' : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <Pressable key={e.id} onPress={() => onEdit(e)} accessibilityRole="button" accessibilityLabel={`Editar ${e.title}`}>
+                <Card>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 40, height: 40, borderRadius: 20,
+                        alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: theme.colors.peach,
+                        borderWidth: theme.borderWidth, borderColor: theme.colors.outline,
+                      }}
+                    >
+                      <Icon size={20} color={theme.colors.textOnFill} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="bodyBold" numberOfLines={1}>{e.title}</Text>
+                      <Text variant="caption" color="secondary">{detail}</Text>
+                    </View>
+                    <Text variant="bodyBold">{e.variable ? '≈ ' : ''}{fmt(Number(e.amount))} €</Text>
+                  </View>
+                </Card>
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+    </>
   );
 }
