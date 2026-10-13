@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Alert } from '../../../../lib/alert';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../../../components/ui/Screen';
 import { Text } from '../../../../components/ui/Text';
 import { SectionTitle } from '../../../../components/ui/Labels';
@@ -27,6 +27,7 @@ import { CATEGORIES, PERIODS, formatEuros, monthlyAmount, type RecurringExpense 
 
 type Member = {
   user_id: string;
+  role: string;
   name: string | null;
   avatar_url: string | null;
   email: string;
@@ -46,6 +47,7 @@ type Expense = {
   title: string;
   amount: number;
   paid_by: string | null;
+  created_by: string | null;
   payer_name: string | null;
   payer_avatar: string | null;
   created_at: string;
@@ -76,6 +78,8 @@ export default function HuchaScreen() {
   const [members, setMembers] = useState<Member[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
+  /** Gasto que se está editando; null = nuevo. */
+  const [editing, setEditing] = useState<Expense | null>(null);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState<string>(user?.id ?? '');
@@ -94,7 +98,7 @@ export default function HuchaScreen() {
       supabase
         .from('expenses')
         .select(`
-          id, title, amount, paid_by, created_at,
+          id, title, amount, paid_by, created_by, created_at,
           payer:users!expenses_paid_by_fkey (username, avatar_url, email),
           splits:expense_splits (
             id, user_id, amount_owed, is_settled,
@@ -105,7 +109,7 @@ export default function HuchaScreen() {
         .order('created_at', { ascending: false }),
       supabase
         .from('house_members')
-        .select('user_id, users:user_id (email, username, avatar_url)')
+        .select('user_id, role, users:user_id (email, username, avatar_url)')
         .eq('house_id', houseId),
       supabase
         .from('recurring_expenses')
@@ -127,6 +131,7 @@ export default function HuchaScreen() {
             title: e.title,
             amount: Number(e.amount),
             paid_by: e.paid_by,
+            created_by: e.created_by,
             payer_name: p?.username ?? p?.email ?? null,
             payer_avatar: p?.avatar_url ?? null,
             created_at: e.created_at,
@@ -150,7 +155,7 @@ export default function HuchaScreen() {
       setMembers(
         memRes.data.map((m) => {
           const u = m.users as { email: string; username: string | null; avatar_url: string | null } | null;
-          return { user_id: m.user_id, name: u?.username ?? null, email: u?.email ?? '', avatar_url: u?.avatar_url ?? null };
+          return { user_id: m.user_id, role: m.role, name: u?.username ?? null, email: u?.email ?? '', avatar_url: u?.avatar_url ?? null };
         }),
       );
     }
@@ -160,13 +165,47 @@ export default function HuchaScreen() {
 
   async function handleRefresh() { setRefreshing(true); await loadData(); setRefreshing(false); }
 
-  // Pre-select all members when modal opens
-  function openModal() {
-    setPaidBy(user?.id ?? '');
-    setSplitAmong(new Set(members.map((m) => m.user_id)));
-    setTitle('');
-    setAmount('');
+  // Nuevo: todos preseleccionados. Editar: lo que tenía el gasto.
+  function openModal(expense: Expense | null = null) {
+    setEditing(expense);
+    setPaidBy(expense?.paid_by ?? user?.id ?? '');
+    setSplitAmong(new Set(expense ? expense.splits.map((s) => s.user_id) : members.map((m) => m.user_id)));
+    setTitle(expense?.title ?? '');
+    setAmount(expense ? String(expense.amount).replace('.', ',') : '');
     setModalOpen(true);
+  }
+
+  // Lo corrige o lo borra quien lo apuntó, quien lo pagó o un propietario (como la RLS).
+  const isOwner = members.some((m) => m.user_id === user?.id && m.role === 'owner');
+  function canEdit(exp: Expense) {
+    return isOwner || exp.created_by === user?.id || exp.paid_by === user?.id;
+  }
+  /** Alguien que no es quien pagó ya ha liquidado su parte: solo se cambia el concepto. */
+  function hasSettled(exp: Expense) {
+    return exp.splits.some((s) => s.is_settled && s.user_id !== exp.paid_by);
+  }
+  const locked = editing !== null && hasSettled(editing);
+
+  function confirmDelete() {
+    const exp = editing;
+    if (!exp) return;
+    Alert.alert(
+      'Borrar gasto',
+      `¿Borrar «${exp.title}» (${fmt(exp.amount)} €)?${hasSettled(exp) ? ' Alguien ya ha liquidado su parte: eso también se borra.' : ''}`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Borrar',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('expenses').delete().eq('id', exp.id);
+            if (error) { Alert.alert('No se pudo borrar', error.message); return; }
+            setModalOpen(false);
+            void loadData();
+          },
+        },
+      ],
+    );
   }
 
   function toggleSplit(uid: string) {
@@ -188,14 +227,16 @@ export default function HuchaScreen() {
     setSaving(true);
     try {
       // Gasto + reparto en una sola transacción; el reparto por céntimos lo hace la BBDD.
-      const { error } = await supabase.rpc('create_expense', {
-        p_house_id: houseId,
+      const fields = {
         p_title: trimmed,
         p_amount: Math.round(parsed * 100) / 100,
         p_paid_by: paidBy,
         p_split_among: Array.from(splitAmong),
-      });
-      if (error) { Alert.alert('No se pudo crear el gasto', error.message); return; }
+      };
+      const { error } = editing
+        ? await supabase.rpc('update_expense', { ...fields, p_expense_id: editing.id })
+        : await supabase.rpc('create_expense', { ...fields, p_house_id: houseId });
+      if (error) { Alert.alert(editing ? 'No se pudo guardar' : 'No se pudo crear el gasto', error.message); return; }
 
       setModalOpen(false);
       void loadData();
@@ -334,8 +375,10 @@ export default function HuchaScreen() {
           ) : (
             expenses.map((exp) => {
               const unsettled = exp.splits.filter((s) => !s.is_settled && s.user_id !== exp.paid_by);
+              const editable = canEdit(exp);
               return (
-                <Card key={exp.id}>
+                <Pressable key={exp.id} onPress={editable ? () => openModal(exp) : undefined} disabled={!editable} accessibilityRole={editable ? 'button' : undefined} accessibilityLabel={editable ? `Editar ${exp.title}` : undefined}>
+                <Card>
                   <View style={{ gap: 10 }}>
                     {/* expense header */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -347,6 +390,7 @@ export default function HuchaScreen() {
                         </Text>
                       </View>
                       <Text variant="bodyBold">{fmt(exp.amount)} €</Text>
+                      {editable ? <Pencil size={14} color={theme.colors.textSecondary} /> : null}
                     </View>
 
                     {/* splits */}
@@ -383,6 +427,7 @@ export default function HuchaScreen() {
                     )}
                   </View>
                 </Card>
+                </Pressable>
               );
             })
           )}
@@ -394,7 +439,7 @@ export default function HuchaScreen() {
       {/* FAB */}
       <View style={{ padding: theme.spacing.lg }}>
         <Pressable
-          onPress={tab === 'fixed' ? () => setFixedModal({ expense: null }) : openModal}
+          onPress={tab === 'fixed' ? () => setFixedModal({ expense: null }) : () => openModal()}
           style={{
             backgroundColor: theme.colors.primary,
             borderRadius: theme.radii.pill,
@@ -429,7 +474,19 @@ export default function HuchaScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.border, alignSelf: 'center' }} />
-            <Text variant="heading">Nuevo gasto</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text variant="heading" style={{ flex: 1 }}>{editing ? 'Editar gasto' : 'Nuevo gasto'}</Text>
+              {editing ? (
+                <Pressable onPress={confirmDelete} hitSlop={10} accessibilityRole="button" accessibilityLabel="Borrar gasto">
+                  <Trash2 size={22} color={theme.colors.danger} />
+                </Pressable>
+              ) : null}
+            </View>
+            {locked ? (
+              <Text variant="caption" color="secondary">
+                Alguien ya ha liquidado su parte, así que solo se puede cambiar el concepto. Para cambiar el importe o el reparto, bórralo y apúntalo de nuevo.
+              </Text>
+            ) : null}
 
             <Input label="Concepto" placeholder="Ej. Supermercado, Netflix…" value={title} onChangeText={setTitle} />
             <Input
@@ -438,10 +495,12 @@ export default function HuchaScreen() {
               keyboardType="decimal-pad"
               value={amount}
               onChangeText={setAmount}
+              editable={!locked}
+              style={locked ? { opacity: 0.5 } : undefined}
             />
 
             {/* paid by */}
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: 6, opacity: locked ? 0.5 : 1 }} pointerEvents={locked ? 'none' : 'auto'}>
               <Text variant="label" color="secondary">Pagado por</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -467,7 +526,7 @@ export default function HuchaScreen() {
             </View>
 
             {/* split among */}
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: 6, opacity: locked ? 0.5 : 1 }} pointerEvents={locked ? 'none' : 'auto'}>
               <Text variant="label" color="secondary">
                 Dividir entre ({splitAmong.size}){splitAmong.size > 0 && amount ? ` · ${fmt(parseFloat(amount.replace(',', '.')) / splitAmong.size || 0)} € c/u` : ''}
               </Text>
@@ -492,7 +551,7 @@ export default function HuchaScreen() {
               </View>
             </View>
 
-            <Button title="Crear gasto" loading={saving} onPress={createExpense} />
+            <Button title={editing ? 'Guardar cambios' : 'Crear gasto'} loading={saving} onPress={createExpense} />
             <Button title="Cancelar" variant="ghost" onPress={() => setModalOpen(false)} />
           </ScrollView>
         </KeyboardAvoidingView>

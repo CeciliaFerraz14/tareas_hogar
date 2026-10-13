@@ -1413,6 +1413,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_expense: {
+        Args: {
+          p_amount: number
+          p_expense_id: string
+          p_paid_by: string
+          p_split_among: string[]
+          p_title: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

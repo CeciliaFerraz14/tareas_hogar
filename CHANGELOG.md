@@ -9,6 +9,17 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.24.0-beta] – 2026-10-13
+
+### Añadido
+- **Editar y borrar gastos compartidos**: al tocar un gasto de la Hucha se abre
+  ya relleno para corregir el concepto, el importe, quién pagó o entre quién se
+  reparte, y con la papelera para borrarlo. El reparto se rehace al céntimo.
+  Pueden hacerlo quien lo apuntó, quien lo pagó o un propietario del hogar.
+  Si alguien ya ha liquidado su parte, solo se puede cambiar el concepto (para
+  no descuadrar lo que ya se pagó). Idea de un usuario desde Sugerencias y
+  errores.
+
 ## [0.23.0-beta] – 2026-10-10
 
 ### Añadido
