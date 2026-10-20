@@ -1,5 +1,3 @@
-import { useColorScheme } from 'react-native';
-
 // Paleta HOMI: acuarela cálida naranja → melocotón, cinta mostaza y verde lima.
 const palette = {
   // Naranjas / melocotón
@@ -59,7 +57,8 @@ export type ThemeColors = {
   read: string;
 };
 
-const light: ThemeColors = {
+// Tema claro (crema y melocotón). De momento no se usa: todo el mundo ve la madera.
+export const light: ThemeColors = {
   background:         palette.cream,
   backgroundGradient: [palette.peach50, palette.peach100],
   surface:            palette.white,
@@ -82,7 +81,8 @@ const light: ThemeColors = {
   read:               palette.readBlue,
 };
 
-const dark: ThemeColors = {
+// Tema de madera: el de todo el mundo, venga el móvil en modo claro u oscuro.
+const wood: ThemeColors = {
   // Tablones color miel (ver WoodPlanks) con cajas crema y texto en tinta.
   background:         '#EBD6BF',
   backgroundGradient: ['#C49664', '#B4875A'],
@@ -165,19 +165,17 @@ export type Theme = {
   shadows: typeof shadows;
   typography: typeof typography;
   borderWidth: typeof borderWidth;
-  isDark: boolean;
+};
+
+const theme: Theme = {
+  colors: wood,
+  spacing,
+  radii,
+  shadows,
+  typography,
+  borderWidth,
 };
 
 export function useTheme(): Theme {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  return {
-    colors: isDark ? dark : light,
-    spacing,
-    radii,
-    shadows,
-    typography,
-    borderWidth,
-    isDark,
-  };
+  return theme;
 }

@@ -47,7 +47,7 @@ export function Screen({ children, scroll = false, style, contentStyle, onRefres
 
   return (
     <LinearGradient colors={theme.colors.backgroundGradient} style={{ flex: 1 }}>
-    {theme.isDark && <WoodPlanks />}
+    <WoodPlanks />
     {/* Abajo: en iOS lo gestionan la barra de cristal y cada lista; en Android, la
         barra de navegación del sistema (en las pestañas este margen queda en 0). */}
     <SafeAreaView style={[{ flex: 1 }, style]} edges={Platform.OS === 'android' && bottomEdge ? ['top', 'bottom'] : ['top']}>

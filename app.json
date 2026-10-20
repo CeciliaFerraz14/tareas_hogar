@@ -3,10 +3,10 @@
     "name": "HogarApp",
     "slug": "HogarApp",
     "scheme": "hogarapp",
-    "version": "0.25.0",
+    "version": "0.26.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
@@ -24,7 +24,7 @@
       "shortName": "HOMI",
       "description": "Organiza tu piso compartido: tareas, compra, chat y gastos.",
       "lang": "es",
-      "themeColor": "#FCEFE6",
+      "themeColor": "#C49664",
       "backgroundColor": "#FCEFE6",
       "display": "standalone",
       "orientation": "portrait",

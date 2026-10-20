@@ -9,6 +9,15 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.26.0-beta] – 2026-10-20
+
+### Cambiado
+- **La madera, para todo el mundo**: el fondo de tablones color miel (antes
+  solo con el móvil en modo oscuro) es ahora el de todas las pantallas, tenga
+  el móvil el modo que tenga. De momento no hay modo oscuro: la app ya no
+  cambia de aspecto con el del sistema. La barra del navegador y de la app
+  instalada va en el mismo color miel.
+
 ## [0.25.0-beta] – 2026-10-20
 
 ### Añadido
