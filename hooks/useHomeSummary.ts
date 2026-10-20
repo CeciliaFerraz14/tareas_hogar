@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '../lib/alert';
 import { supabase } from '../lib/supabase';
 import { subscribeToHouseTables } from '../lib/realtime';
-import { completionKey, dateKey, isDoneOn, isWeekly, setWeeklyDone, weekDayOf, type Completions } from '../lib/tasks';
+import { byTime, completionKey, dateKey, isDoneOn, isWeekly, setWeeklyDone, weekDayOf, type Completions } from '../lib/tasks';
 
 export type HomeMember = {
   user_id: string;
@@ -26,6 +26,7 @@ export type TodayTask = {
   status: 'pending' | 'done';
   week_day: number | null;
   due_date: string | null;
+  due_time: string | null;
   assigned_to: string | null;
   done: boolean;
 };
@@ -58,7 +59,7 @@ export function useHomeSummary(userId: string | undefined, houseIds: string[]) {
       supabase.rpc('my_house_summaries', { p_today: todayKey }),
       supabase
         .from('tasks')
-        .select('id, house_id, title, status, week_day, due_date, assigned_to')
+        .select('id, house_id, title, status, week_day, due_date, due_time, assigned_to')
         .or(`due_date.eq.${todayKey},and(due_date.is.null,week_day.eq.${weekDayOf(today)})`)
         .order('created_at', { ascending: true }),
       supabase.from('task_completions').select('task_id, date').eq('date', todayKey),
@@ -102,8 +103,8 @@ export function useHomeSummary(userId: string | undefined, houseIds: string[]) {
           const task = { ...t, status: t.status === 'done' ? 'done' as const : 'pending' as const };
           return { ...task, done: isDoneOn(task, today, completions) };
         })
-        // Lo pendiente primero.
-        .sort((a, b) => Number(a.done) - Number(b.done));
+        // Lo pendiente primero; dentro, por hora.
+        .sort((a, b) => Number(a.done) - Number(b.done) || byTime(a, b));
       setTodayTasks(mine);
     }
   }, [userId]);

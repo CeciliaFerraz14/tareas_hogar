@@ -4,6 +4,7 @@ import { Check, PartyPopper } from 'lucide-react-native';
 import { Card } from '../ui/Card';
 import { Text } from '../ui/Text';
 import { useTheme } from '../../lib/theme';
+import { shortTime } from '../../lib/tasks';
 import type { TodayTask } from '../../hooks/useHomeSummary';
 
 const COLLAPSED_COUNT = 4;
@@ -82,6 +83,9 @@ export function TodayTasks({ tasks, houseNameById, onToggle }: TodayTasksProps) 
           >
             {task.title}
           </Text>
+          {task.due_time ? (
+            <Text variant="caption" color="secondary">{shortTime(task.due_time)}</Text>
+          ) : null}
           {showHouse ? (
             <Text variant="caption" color="secondary" numberOfLines={1} style={{ maxWidth: 110 }}>
               {houseNameById[task.house_id]}

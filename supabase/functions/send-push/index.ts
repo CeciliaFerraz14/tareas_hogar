@@ -4,6 +4,8 @@
 // apuntarle otra persona y el mismo día a las 10 (recordatorio de pg_cron).
 // Y de las rutinas de las mascotas que tienen aviso, cuando tocan y nadie las ha
 // marcado (send_pet_reminders, pg_cron): a quien se encarga o a todo el hogar.
+// Igual con las tareas con hora (send_task_reminders, pg_cron): a quien la tiene
+// asignada o, si no es de nadie, a todo el hogar.
 // Las sugerencias y errores (tabla feedback) van a quien lleva HOMI
 // (private.app_admins, en record.recipient_ids), no al hogar. Y al marcar una
 // como hecha desde el Buzón (event feedback_done), a quien la mandó.
@@ -18,7 +20,8 @@ type Row = Record<string, unknown>;
 type Subscription = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string };
 // 'created' = algo nuevo (por defecto). task_done y shopping_* los manda
 // private.enqueue_done_push; cook_assigned, enqueue_cook_push; cook_reminder,
-// send_cook_reminders (pg_cron); pet_reminder, send_pet_reminders (pg_cron).
+// send_cook_reminders (pg_cron); pet_reminder, send_pet_reminders (pg_cron);
+// task_reminder, send_task_reminders (pg_cron).
 type PushEvent =
   | 'created'
   | 'task_done'
@@ -27,6 +30,7 @@ type PushEvent =
   | 'cook_assigned'
   | 'cook_reminder'
   | 'pet_reminder'
+  | 'task_reminder'
   | 'feedback_done';
 
 type ReminderMeal = { slot: string; title: string; eating: number };
@@ -225,8 +229,8 @@ Deno.serve(async (req) => {
   // en el menú, solo quien cocina).
   let recipients = (membersRes.data ?? []).map((m) => m.user_id as string).filter((id) => id !== actorId);
   if (kind === 'menu') recipients = recipients.filter((id) => id === record.cook_id);
-  // Rutina de mascota: a quien se encarga (null = todo el hogar).
-  if (event === 'pet_reminder' && Array.isArray(record.recipient_ids)) {
+  // Rutina de mascota o tarea con hora: a quien se encarga (null = todo el hogar).
+  if ((event === 'pet_reminder' || event === 'task_reminder') && Array.isArray(record.recipient_ids)) {
     const owners = new Set(record.recipient_ids as string[]);
     recipients = recipients.filter((id) => owners.has(id));
   }
@@ -304,6 +308,20 @@ Deno.serve(async (req) => {
           tag: `pet-${record.id}-${record.slot}`,
         };
       }
+      case 'task_reminder':
+        return record.assigned_to === userId
+          ? {
+              title: `⏰ Te toca: ${record.title}`,
+              body: `A las ${record.at} · ${houseName}`,
+              url: `/house/${houseId}/tareas`,
+              tag: `task-reminder-${record.id}`,
+            }
+          : {
+              title: `⏰ Toca: ${record.title}`,
+              body: `A las ${record.at} · Nadie la ha marcado aún · ${houseName}`,
+              url: `/house/${houseId}/tareas`,
+              tag: `task-reminder-${record.id}`,
+            };
     }
     switch (kind) {
       case 'chat':

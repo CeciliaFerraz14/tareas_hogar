@@ -1197,6 +1197,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           due_date: string | null
+          due_time: string | null
           house_id: string
           id: string
           room_id: string | null
@@ -1211,6 +1212,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           house_id: string
           id?: string
           room_id?: string | null
@@ -1225,6 +1227,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           house_id?: string
           id?: string
           room_id?: string | null

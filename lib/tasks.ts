@@ -4,12 +4,15 @@ import { supabase } from './supabase';
 //   · semanal   → week_day (0=Lunes … 6=Domingo). Se completa día a día en task_completions.
 //   · de un día → due_date ('YYYY-MM-DD'). Su estado es tasks.status.
 //   · sin día   → ambos null. Su estado es tasks.status.
+// Las de un día y las semanales pueden llevar hora (due_time); a esa hora se
+// avisa si nadie la ha marcado (send_task_reminders, pg_cron).
 
 export type ScheduledTask = {
   id: string;
   status: 'pending' | 'done';
   week_day: number | null;
   due_date: string | null;
+  due_time?: string | null;
 };
 
 export type TaskWhen = 'none' | 'once' | 'weekly';
@@ -66,11 +69,23 @@ export function dayStatus(
   return today.every((t) => isDoneOn(t, date, completions)) ? 'done' : 'pending';
 }
 
+/** '18:30:00' (time de Postgres) → '18:30'. */
+export function shortTime(time: string | null | undefined): string | null {
+  return time ? time.slice(0, 5) : null;
+}
+
+/** Orden de un día: primero las que tienen hora, de la más temprana a la más tardía. */
+export function byTime(a: ScheduledTask, b: ScheduledTask): number {
+  if (a.due_time && b.due_time) return a.due_time.localeCompare(b.due_time);
+  return Number(!a.due_time) - Number(!b.due_time);
+}
+
 /** Texto de cuándo toca la tarea, para la vista "Todas". */
 export function whenLabel(task: ScheduledTask): string | null {
-  if (task.due_date !== null) return shortDate(task.due_date);
-  if (task.week_day !== null) return `Cada ${DAY_NAMES[task.week_day]}`;
-  return null;
+  const time = shortTime(task.due_time);
+  const day =
+    task.due_date !== null ? shortDate(task.due_date) : task.week_day !== null ? `Cada ${DAY_NAMES[task.week_day]}` : null;
+  return day && time ? `${day} · ${time}` : day;
 }
 
 /** 'YYYY-MM-DD' → Date local (new Date('YYYY-MM-DD') sería medianoche UTC). */
@@ -85,11 +100,15 @@ export function whenOf(task: ScheduledTask): TaskWhen {
   return 'none';
 }
 
-/** Columnas week_day/due_date para guardar una tarea: `date` para 'once', `weekDay` para 'weekly'. */
-export function scheduleFields(when: TaskWhen, date: Date, weekDay: number = weekDayOf(date)) {
+/**
+ * Columnas week_day/due_date/due_time para guardar una tarea: `date` para 'once',
+ * `weekDay` para 'weekly'. Sin día no hay hora.
+ */
+export function scheduleFields(when: TaskWhen, date: Date, weekDay: number = weekDayOf(date), time: string | null = null) {
   return {
     week_day: when === 'weekly' ? weekDay : null,
     due_date: when === 'once' ? dateKey(date) : null,
+    due_time: when === 'none' ? null : time,
   };
 }
 

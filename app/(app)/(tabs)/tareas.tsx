@@ -18,12 +18,14 @@ import { supabase } from '../../../lib/supabase';
 import { subscribeToHouseTables } from '../../../lib/realtime';
 import { useTheme } from '../../../lib/theme';
 import {
+  byTime,
   dayStatus,
   isDoneOn,
   isWeekly,
   loadCompletions,
   occursOn,
   setWeeklyDone,
+  shortTime,
   whenLabel,
   completionKey,
   type Completions,
@@ -42,6 +44,7 @@ type Task = {
   status: 'pending' | 'done';
   week_day: number | null;
   due_date: string | null;
+  due_time: string | null;
   room_id: string | null;
   assigned_to: string | null;
 };
@@ -75,7 +78,7 @@ function TareasScreen({ house }: { house: MyHouse }) {
       supabase.from('rooms').select('id, name').eq('house_id', houseId).order('name'),
       supabase
         .from('tasks')
-        .select('id, title, status, week_day, due_date, room_id, assigned_to')
+        .select('id, title, status, week_day, due_date, due_time, room_id, assigned_to')
         .eq('house_id', houseId)
         .order('created_at', { ascending: false }),
       supabase
@@ -112,8 +115,9 @@ function TareasScreen({ house }: { house: MyHouse }) {
     return subscribeToHouseTables(houseId, ['tasks', 'task_completions'], () => { void loadData(); });
   }, [houseId, loadData]);
 
+  // Un día concreto, ordenado por hora; "Todas", como se crearon.
   const visibleTasks =
-    selectedDate === null ? tasks : tasks.filter((t) => occursOn(t, selectedDate));
+    selectedDate === null ? tasks : tasks.filter((t) => occursOn(t, selectedDate)).sort(byTime);
 
   async function toggleTask(task: Task) {
     if (isWeekly(task)) {
@@ -200,7 +204,7 @@ function TareasScreen({ house }: { house: MyHouse }) {
             const done = selectedDate ? isDoneOn(task, selectedDate, completions) : task.status === 'done';
             // En "Todas" una semanal no tiene un día concreto que marcar.
             const toggleable = selectedDate !== null || !isWeekly(task);
-            const when = selectedDate === null ? whenLabel(task) : null;
+            const when = selectedDate === null ? whenLabel(task) : shortTime(task.due_time);
             return (
               <Pressable key={task.id} onPress={() => openEdit(task)} accessibilityHint="Editar tarea">
                 <Card>

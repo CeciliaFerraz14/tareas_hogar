@@ -9,6 +9,16 @@ Todos los cambios importantes de HOMI. Formato basado en
 - La versión se cambia en `app.json` (`expo.version` y `expo.extra.releaseStage`)
   y en `package.json`. Se ve al final de Ajustes.
 
+## [0.25.0-beta] – 2026-10-20
+
+### Añadido
+- **Tareas con hora**: al crear o editar una tarea de un día o semanal se puede
+  elegir una hora (o «Sin hora»). Se ve en la tarjeta y en «Para hoy», y las
+  tareas de cada día salen ordenadas por hora. A esa hora, si nadie la ha
+  marcado, llega un aviso a quien la tiene asignada o, si no es de nadie, a
+  todo el hogar (se apaga con el interruptor de Tareas de Ajustes). Idea de un
+  usuario desde Sugerencias y errores.
+
 ## [0.24.0-beta] – 2026-10-13
 
 ### Añadido

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { Alert } from '../../lib/alert';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Bell, Plus, Trash2 } from 'lucide-react-native';
 import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -14,10 +14,12 @@ import {
   parseDateKey,
   scheduleFields,
   shortDate,
+  shortTime,
   weekDayOf,
   whenOf,
   type TaskWhen,
 } from '../../lib/tasks';
+import { TIME_PRESETS, normalizeTime } from '../../lib/pets';
 
 export type TaskRoom = { id: string; name: string };
 export type TaskMember = {
@@ -32,6 +34,7 @@ export type EditableTask = {
   status: 'pending' | 'done';
   week_day: number | null;
   due_date: string | null;
+  due_time: string | null;
   room_id: string | null;
   assigned_to: string | null;
 };
@@ -73,6 +76,9 @@ export function TaskFormModal({
   const [when, setWhen] = useState<TaskWhen>('once');
   const [date, setDate] = useState(() => new Date());
   const [weekDay, setWeekDay] = useState(0);
+  // 'HH:MM' o null = sin hora.
+  const [time, setTime] = useState<string | null>(null);
+  const [customTime, setCustomTime] = useState('');
   const [assignee, setAssignee] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -90,6 +96,8 @@ export function TaskFormModal({
     setWhen(task ? whenOf(task) : selectedDate ? 'once' : 'none');
     setDate(base);
     setWeekDay(task?.week_day ?? weekDayOf(base));
+    setTime(shortTime(task?.due_time));
+    setCustomTime('');
     setAssignee(task?.assigned_to ?? null);
     // Solo al abrir: no pisar lo que se está editando si la pantalla recarga.
   }, [visible]);
@@ -104,7 +112,7 @@ export function TaskFormModal({
       title: trimmed,
       room_id: roomId,
       assigned_to: assignee,
-      ...scheduleFields(when, date, weekDay),
+      ...scheduleFields(when, date, weekDay, time),
     };
     setSaving(true);
     try {
@@ -141,6 +149,16 @@ export function TaskFormModal({
     ]);
   }
 
+  function addCustomTime() {
+    const next = normalizeTime(customTime);
+    if (!next) {
+      Alert.alert('Hora no válida', 'Escríbela así: 08:30 o 21:00.');
+      return;
+    }
+    setTime(next);
+    setCustomTime('');
+  }
+
   async function createRoom() {
     const name = newRoomName.trim();
     if (!name) return;
@@ -166,6 +184,11 @@ export function TaskFormModal({
     { value: 'once', label: `Solo el ${shortDate(dateKey(date))}` },
     { value: 'weekly', label: `Cada ${DAY_NAMES[weekDay]}` },
   ];
+
+  const assigneeMember = members.find((m) => m.user_id === assignee);
+  const reminderLabel = assigneeMember
+    ? `A las ${time}, si no está hecha, le llega un aviso a ${assigneeMember.username ?? assigneeMember.email.split('@')[0]}.`
+    : `A las ${time}, si no está hecha, le llega un aviso a todo el hogar.`;
 
   const chip = (selected: boolean) => ({
     paddingHorizontal: 12,
@@ -216,6 +239,47 @@ export function TaskFormModal({
                 ))}
               </View>
             </View>
+
+            {/* time picker: solo si tiene día */}
+            {when !== 'none' ? (
+              <View style={{ gap: 8 }}>
+                <Text variant="label" color="secondary">Hora</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Pressable onPress={() => setTime(null)} accessibilityRole="button" accessibilityState={{ selected: time === null }}>
+                    <View style={chip(time === null)}>
+                      <Text variant="label" color={time === null ? 'inverse' : 'secondary'}>Sin hora</Text>
+                    </View>
+                  </Pressable>
+                  {[...new Set([...TIME_PRESETS, ...(time ? [time] : [])])].sort().map((t) => (
+                    <Pressable key={t} onPress={() => setTime(t)} accessibilityRole="button" accessibilityState={{ selected: time === t }}>
+                      <View style={chip(time === t)}>
+                        <Text variant="label" color={time === t ? 'inverse' : 'secondary'}>{t}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Input
+                    containerStyle={{ flex: 1 }}
+                    style={{ paddingVertical: 10 }}
+                    placeholder="Otra hora (ej. 07:45)"
+                    value={customTime}
+                    onChangeText={setCustomTime}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={5}
+                    returnKeyType="done"
+                    onSubmitEditing={addCustomTime}
+                  />
+                  <Button title="Poner" variant="secondary" fullWidth={false} onPress={addCustomTime} />
+                </View>
+                {time ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Bell size={14} color={theme.colors.textSecondary} />
+                    <Text variant="caption" color="secondary" style={{ flex: 1 }}>{reminderLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
 
             {/* room picker */}
             <View style={{ gap: 6 }}>
