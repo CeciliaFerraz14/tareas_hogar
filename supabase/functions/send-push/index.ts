@@ -29,6 +29,7 @@ type PushEvent =
   | 'shopping_finished'
   | 'cook_assigned'
   | 'cook_reminder'
+  | 'menu_changed'
   | 'pet_reminder'
   | 'task_reminder'
   | 'feedback_done';
@@ -226,9 +227,9 @@ Deno.serve(async (req) => {
   const actorName = displayName(actorRes.data as { username: string | null; email: string } | null);
 
   // Destinatarios: los demás miembros (en un gasto, solo quien participa en él;
-  // en el menú, solo quien cocina).
+  // en el menú, solo quien cocina… salvo 'menu_changed', que avisa a todo el hogar).
   let recipients = (membersRes.data ?? []).map((m) => m.user_id as string).filter((id) => id !== actorId);
-  if (kind === 'menu') recipients = recipients.filter((id) => id === record.cook_id);
+  if (kind === 'menu' && event !== 'menu_changed') recipients = recipients.filter((id) => id === record.cook_id);
   // Rutina de mascota o tarea con hora: a quien se encarga (null = todo el hogar).
   if ((event === 'pet_reminder' || event === 'task_reminder') && Array.isArray(record.recipient_ids)) {
     const owners = new Set(record.recipient_ids as string[]);
@@ -298,6 +299,15 @@ Deno.serve(async (req) => {
           body: `${mealsLine((record.meals as ReminderMeal[] | undefined) ?? [])} · ${houseName}`,
           url: `/house/${houseId}/menu`,
           tag: `cook-reminder-${houseId}`,
+        };
+      case 'menu_changed':
+        // Un solo aviso por hogar (el nuevo sustituye al anterior): si se cambian
+        // varios platos seguidos, el throttle los agrupa y aquí se ve el último.
+        return {
+          title: `🍽️ ${actorName} está cambiando el menú`,
+          body: `${record.title} · ${houseName}`,
+          url: `/house/${houseId}/menu`,
+          tag: `menu-${houseId}`,
         };
       case 'pet_reminder': {
         const who = record.pet_name ? String(record.pet_name) : 'la manada';
